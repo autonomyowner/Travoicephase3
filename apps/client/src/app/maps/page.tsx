@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import AuthGate from '../../components/AuthGate'
 import { listMaps } from '../../lib/api'
@@ -35,7 +36,10 @@ export default function MapsPage() {
         {err ? <p className="text-sm text-red-600">{err}</p> : null}
         <ul className="space-y-2">
           {maps.map((m) => (
-            <li key={m.id} className="text-sm opacity-80">{m.title} — <span className="opacity-60">{new Date(m.created_at).toLocaleString()}</span></li>
+            <li key={m.id} className="text-sm opacity-80">
+              <Link className="underline underline-offset-4" href={`/maps/${m.id}`}>{m.title}</Link>
+              <span className="opacity-60"> — {new Date(m.created_at).toLocaleString()}</span>
+            </li>
           ))}
           {maps.length === 0 && !loading && <li className="text-sm opacity-60">No maps yet.</li>}
         </ul>

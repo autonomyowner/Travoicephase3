@@ -16,11 +16,14 @@ export default function OnboardingPage() {
     let active = true
     const init = async () => {
       if (!supabase) { setLoading(false); return }
-      const { data: sessionData } = await supabase.auth.getSession()
-      const session = sessionData.session
+      const sessionRes = await supabase.auth.getSession()
+      const session = sessionRes.data.session
       if (!session) { router.replace("/login?redirect=/onboarding"); return }
       // Ensure profile row exists
-      await supabase.from("users").insert({ id: session.user.id }).select("id").single().catch(() => null)
+      const insertRes = await supabase.from("users").insert({ id: session.user.id }).select("id").single()
+      if (insertRes.error && insertRes.error.code !== '23505') {
+        // ignore unique violation-like errors; otherwise surface
+      }
       const { data: profile } = await supabase.from("users").select("onboarded").eq("id", session.user.id).maybeSingle()
       if (!active) return
       if (profile?.onboarded) {

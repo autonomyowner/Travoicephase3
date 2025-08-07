@@ -102,4 +102,33 @@ export async function createVersion(mapId: string, params: { graph: GenerateResp
   return data.version as { id: string; version: number; created_at: string }
 }
 
+export async function getMap(mapId: string): Promise<{ id: string; title: string; graph: GenerateResponse['map']; layout?: unknown }> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token
+  if (!token) throw new Error('Not authenticated')
+  const res = await fetch(`${API_BASE_URL}/api/maps/${mapId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Get map failed: ${res.status} ${text}`)
+  }
+  const data = await res.json()
+  return data.map as { id: string; title: string; graph: GenerateResponse['map']; layout?: unknown }
+}
+
+export async function updateMap(mapId: string, params: Partial<{ title: string; description: string; graph: GenerateResponse['map']; layout: unknown }>): Promise<{ ok: true }> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token
+  if (!token) throw new Error('Not authenticated')
+  const res = await fetch(`${API_BASE_URL}/api/maps/${mapId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(params)
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Update map failed: ${res.status} ${text}`)
+  }
+  return res.json()
+}
+
 

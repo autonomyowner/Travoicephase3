@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase, supabaseConfigured } from "../../lib/supabase"
 
-export default function LoginPage() {
+function LoginBody() {
   const router = useRouter()
   const params = useSearchParams()
   const [email, setEmail] = useState("")
@@ -14,7 +14,8 @@ export default function LoginPage() {
   useEffect(() => {
     let mounted = true
     const init = async () => {
-      const { data } = await supabase?.auth.getSession()
+      const res = await supabase?.auth.getSession()
+      const data = res?.data
       if (!mounted) return
       if (data?.session) {
         const redirect = params.get("redirect") || "/"
@@ -76,6 +77,14 @@ export default function LoginPage() {
       </div>
       {status && <p className="text-sm opacity-70">{status}</p>}
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm opacity-70">Loading…</div>}>
+      <LoginBody />
+    </Suspense>
   )
 }
 

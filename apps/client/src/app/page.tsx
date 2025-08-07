@@ -1,14 +1,17 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { generateMap, getHealth, API_BASE_URL } from "../lib/api"
 import { saveMap } from "../lib/api"
 import { listMaps } from "../lib/api"
 import dynamic from "next/dynamic"
+import { supabase } from "../lib/supabase"
 const MapCanvas = dynamic(() => import("../components/MapCanvas"), { ssr: false })
 const AuthGate = dynamic(() => import("../components/AuthGate"), { ssr: false })
 
 export default function Home() {
+  const router = useRouter()
   const [health, setHealth] = useState<string>("")
   const [input, setInput] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
@@ -24,7 +27,7 @@ export default function Home() {
         const h = await getHealth()
         if (cancelled) return
         setHealth(`${h.status} (uptime: ${Math.floor(h.uptime)}s) — ${API_BASE_URL}`)
-      } catch (e) {
+      } catch {
         if (cancelled) return
         setHealth(`unreachable — ${API_BASE_URL}`)
       }
@@ -34,6 +37,25 @@ export default function Home() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    let active = true
+    const checkOnboarding = async () => {
+      const session = (await supabase?.auth.getSession())?.data.session
+      if (!active || !session) return
+      const { data: profile } = await supabase!
+        .from("users")
+        .select("onboarded")
+        .eq("id", session.user.id)
+        .maybeSingle()
+      if (!active) return
+      if (profile && profile.onboarded === false) {
+        router.replace("/onboarding")
+      }
+    }
+    checkOnboarding()
+    return () => { active = false }
+  }, [router])
 
   const handleLoadMaps = async () => {
     try {
@@ -119,7 +141,13 @@ export default function Home() {
             <p className="text-sm text-black/60 dark:text-white/60">Nodes: {result.nodes} · Edges: {result.edges}</p>
             {result.map ? (
               <div className="pt-2">
-                <MapCanvas nodes={result.map.nodes} edges={result.map.edges} />
+                <MapCanvas
+                  nodes={result.map.nodes}
+                  edges={result.map.edges}
+                  readOnly={false}
+                  enableToolbar
+                  onChange={(next) => setResult((r) => (r ? { ...r, map: next } : r))}
+                />
               </div>
             ) : null}
             <div className="pt-2">

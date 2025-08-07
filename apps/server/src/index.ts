@@ -74,7 +74,7 @@ app.post('/api/maps', async (req, res) => {
       if (userError || !userData?.user) return res.status(401).json({ error: 'Unauthorized' })
       userId = userData.user.id
     }
-    await supabase.from('users').insert({ id: userId }).select('id').single().catch(() => null)
+    await supabase.from('users').upsert({ id: userId }, { onConflict: 'id' })
     const { data, error } = await supabase.from('maps').insert({
       user_id: userId,
       title: parsed.data.title,
@@ -112,6 +112,53 @@ app.get('/api/maps/:id', async (req, res) => {
       .single()
     if (error) return res.status(404).json({ error: 'Not found' })
     res.json({ map: data })
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? 'Unexpected error' })
+  }
+})
+
+// Update a map (partial)
+const UpdateMapRequest = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  graph: MapGraphSchema.optional(),
+  layout: z.any().optional()
+})
+
+app.patch('/api/maps/:id', async (req, res) => {
+  try {
+    const parsed = UpdateMapRequest.safeParse(req.body)
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues })
+    const authHeader = req.header('authorization')
+    const jwt = authHeader?.toLowerCase().startsWith('bearer ')
+      ? authHeader.slice(7).trim()
+      : null
+    if (!jwt || !supabase) return res.status(401).json({ error: 'Unauthorized' })
+    const { data: userData, error: userError } = await supabase.auth.getUser(jwt)
+    if (userError || !userData?.user) return res.status(401).json({ error: 'Unauthorized' })
+    const userId = userData.user.id
+
+    // Ensure ownership
+    const { data: mapRow, error: mapErr } = await supabase
+      .from('maps')
+      .select('id,user_id')
+      .eq('id', req.params.id)
+      .single()
+    if (mapErr || !mapRow || mapRow.user_id !== userId) return res.status(404).json({ error: 'Not found' })
+
+    const payload: Record<string, unknown> = {}
+    if (Object.prototype.hasOwnProperty.call(parsed.data, 'title')) payload.title = parsed.data.title
+    if (Object.prototype.hasOwnProperty.call(parsed.data, 'description')) payload.description = parsed.data.description
+    if (Object.prototype.hasOwnProperty.call(parsed.data, 'graph')) payload.graph = parsed.data.graph
+    if (Object.prototype.hasOwnProperty.call(parsed.data, 'layout')) payload.layout = parsed.data.layout
+
+    const { error } = await supabase
+      .from('maps')
+      .update(payload)
+      .eq('id', req.params.id)
+      .eq('user_id', userId)
+    if (error) return res.status(500).json({ error: error.message })
+    res.json({ ok: true })
   } catch (e: any) {
     res.status(500).json({ error: e?.message ?? 'Unexpected error' })
   }
@@ -179,7 +226,7 @@ app.post('/api/maps/generate', async (req, res) => {
       const { data: userData, error: userError } = await client.auth.getUser(jwt)
       if (!userError && userData?.user) {
         const userId = userData.user.id
-        await client.from('users').insert({ id: userId }).select('id').single().catch(() => null)
+        await client.from('users').upsert({ id: userId }, { onConflict: 'id' })
         await client.from('maps').insert({ user_id: userId, title: 'Generated Map', graph: map }).select('id').single()
       }
     }

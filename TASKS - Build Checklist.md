@@ -41,11 +41,11 @@
   - [x] Create tables: `users`, `maps`, `map_versions`, `templates`
 - [ ] Client auth
   - [x] Install Supabase client; session provider
-  - [ ] Pages: Login, Signup, Logout
+  - [x] Pages: Login, Signup, Logout
   - [x] Route guards for protected pages
 - [ ] Onboarding
-  - [ ] First-run prompt page (seed text to map)
-  - [ ] Save onboarding flags on user
+  - [x] First-run prompt page (seed text to map)
+  - [x] Save onboarding flags on user
 
 ## Phase 3 — Input Layer (Text & Voice)
 - [x] Text input
@@ -78,20 +78,20 @@
   - [ ] Tailwind-based styling and icons
   - [ ] Sentiment color halo + priority badge
 - [ ] Interactions
-  - [ ] Drag/reposition nodes
-  - [ ] Connect/disconnect edges, re-link
-  - [ ] Inline label editing (double-click)
+  - [x] Drag/reposition nodes
+  - [x] Connect/disconnect edges, re-link
+  - [x] Inline label editing (double-click)
   - [ ] Context menu (convert type, delete, connect)
 - [ ] Layouts
   - [ ] Tree and radial layouts
-  - [ ] Preserve manual positions after edits
+  - [x] Preserve manual positions after edits
 
 ## Phase 6 — Persistence, Versioning, Recovery
 - [ ] Persistence
-  - [ ] Save map JSON and layout to Supabase
+  - [x] Save map JSON and layout to Supabase
   - [x] Link maps to user id; title/description metadata
 - [ ] Versioning
-  - [ ] Auto-save on throttled interval
+  - [x] Auto-save on throttled interval
   - [ ] Manual checkpoints with labels
   - [ ] Version history panel; restore/copy
 - [ ] Resilience
