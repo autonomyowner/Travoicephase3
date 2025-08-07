@@ -15,23 +15,24 @@
   - [ ] Define definition of done (DoD) and coding standards
 
 ## Phase 1 — Monorepo & Dev Environment
-- [ ] Monorepo structure
-  - [ ] Create folders: `apps/client`, `apps/server`, `packages/types`
-  - [ ] Configure npm workspaces in `package.json`
-  - [ ] Add shared tsconfig in root and per app
-- [ ] Client app
-  - [ ] Scaffold Next.js (TypeScript, App Router)
-  - [ ] Install Tailwind, configure base theme
-  - [ ] Add ESLint + Prettier configs
+- [x] Monorepo structure
+  - [x] Create folders: `apps/client`, `apps/server`, `packages/types`
+  - [x] Configure npm workspaces in `package.json`
+  - [x] Add shared tsconfig in root and per app
+- [x] Client app
+  - [x] Scaffold Next.js (TypeScript, App Router)
+  - [x] Install Tailwind, configure base theme
+  - [x] Add ESLint + Prettier configs
+  - [ ] Wire client to server base URL via env
 - [ ] Server app
-  - [ ] Scaffold Express (TypeScript)
+  - [x] Scaffold Express (TypeScript)
   - [ ] Add Zod, CORS, helmet, pino logger
-  - [ ] Create health endpoint `/health`
-- [ ] Local env
-  - [ ] `.env.example` with OPENAI, SUPABASE, etc.
-  - [ ] Add `dotenv` loading and validation
-- [ ] Scripts
-  - [ ] `dev:client`, `dev:server`, `dev`, `build`, `lint`, `typecheck`
+  - [x] Create health endpoint `/health`
+- [x] Local env
+  - [x] `.env.example` with OPENAI, SUPABASE, etc.
+  - [x] Add `dotenv` loading and validation
+- [x] Scripts
+  - [x] `dev:client`, `dev:server`, `dev`, `build`, `lint`, `typecheck`
 
 ## Phase 2 — Authentication & Onboarding
 - [ ] Supabase setup

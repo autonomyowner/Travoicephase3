@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev:client": "npm --workspace apps/client run dev",
     "dev:server": "npm --workspace apps/server run dev",
-    "dev": "npm run dev:server"
+    "dev": "npm run dev:client"
   },
   "keywords": [],
   "author": "",
@@ -17,5 +17,8 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
 }
