@@ -1,0 +1,21 @@
+{
+  "name": "mindmap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:client": "npm --workspace apps/client run dev",
+    "dev:server": "npm --workspace apps/server run dev",
+    "dev": "npm run dev:server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

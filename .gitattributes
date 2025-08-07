@@ -1,0 +1,12 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# Ensure shell scripts stay LF
+*.sh text eol=lf
+
+# Keep images and binaries untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg text
