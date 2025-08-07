@@ -1,103 +1,151 @@
-import Image from "next/image";
+"use client"
+
+import { useEffect, useState } from "react"
+import { generateMap, getHealth, API_BASE_URL } from "../lib/api"
+import { saveMap } from "../lib/api"
+import { listMaps } from "../lib/api"
+import dynamic from "next/dynamic"
+const MapCanvas = dynamic(() => import("../components/MapCanvas"), { ssr: false })
+const AuthGate = dynamic(() => import("../components/AuthGate"), { ssr: false })
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [health, setHealth] = useState<string>("")
+  const [input, setInput] = useState<string>("")
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [result, setResult] = useState<{ summary: string; nodes: number; edges: number; map?: { nodes: Array<{ id: string; label: string; position?: { x: number; y: number } }>; edges: Array<{ id: string; source: string; target: string; label?: string }> } } | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string>("")
+  const [myMaps, setMyMaps] = useState<Array<{ id: string; title: string; created_at: string }>>([])
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  useEffect(() => {
+    let cancelled = false
+    const handleFetchHealth = async () => {
+      try {
+        const h = await getHealth()
+        if (cancelled) return
+        setHealth(`${h.status} (uptime: ${Math.floor(h.uptime)}s) — ${API_BASE_URL}`)
+      } catch (e) {
+        if (cancelled) return
+        setHealth(`unreachable — ${API_BASE_URL}`)
+      }
+    }
+    handleFetchHealth()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleLoadMaps = async () => {
+    try {
+      const maps = await listMaps()
+      setMyMaps(maps)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to load maps')
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError("")
+    if (!input.trim()) {
+      setError("Please enter some text to generate a map.")
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const data = await generateMap(input)
+      setResult({ summary: data.summary, nodes: data.map.nodes.length, edges: data.map.edges.length, map: data.map })
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to generate map")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="font-sans min-h-screen p-8 sm:p-12 bg-background text-foreground">
+      <main className="mx-auto max-w-3xl space-y-8">
+        <header className="space-y-2">
+          <h1 className="text-2xl font-semibold">NeuroCanvas</h1>
+          <p className="text-sm text-black/60 dark:text-white/60">Server health: {health || "checking..."}</p>
+        </header>
+
+        <AuthGate>
+        <section aria-labelledby="generate-heading" className="space-y-4">
+          <h2 id="generate-heading" className="text-lg font-medium">Generate a mind map</h2>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <label htmlFor="thoughts" className="block text-sm font-medium">Your thoughts</label>
+            <textarea
+              id="thoughts"
+              name="thoughts"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              rows={5}
+              className="w-full rounded-md border border-black/10 dark:border-white/15 bg-transparent p-3 outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/25"
+              placeholder="Write anything..."
+              aria-describedby="help-text"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+            <p id="help-text" className="text-xs text-black/60 dark:text-white/60">We will parse this into a simple map (mocked for now).</p>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center rounded-md bg-black text-white px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-black"
+              >
+                {isSubmitting ? "Generating..." : "Generate"}
+              </button>
+              {error ? <span role="alert" className="text-sm text-red-600">{error}</span> : null}
+            </div>
+          </form>
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">My maps</h2>
+            <button onClick={handleLoadMaps} className="rounded-md border px-3 py-1.5 text-sm border-black/10 dark:border-white/15">Refresh</button>
+          </div>
+          <ul className="space-y-2">
+            {myMaps.map((m) => (
+              <li key={m.id} className="text-sm opacity-80">{m.title} — <span className="opacity-60">{new Date(m.created_at).toLocaleString()}</span></li>
+            ))}
+            {myMaps.length === 0 && <li className="text-sm opacity-60">No maps yet.</li>}
+          </ul>
+        </section>
+
+        {result ? (
+          <section aria-live="polite" className="space-y-2 border-t pt-6 border-black/10 dark:border-white/10">
+            <h3 className="text-base font-semibold">Result</h3>
+            <p className="text-sm">{result.summary}</p>
+            <p className="text-sm text-black/60 dark:text-white/60">Nodes: {result.nodes} · Edges: {result.edges}</p>
+            {result.map ? (
+              <div className="pt-2">
+                <MapCanvas nodes={result.map.nodes} edges={result.map.edges} />
+              </div>
+            ) : null}
+            <div className="pt-2">
+              <button
+                className="rounded-md bg-black text-white px-3 py-1.5 text-sm dark:bg-white dark:text-black disabled:opacity-50"
+                disabled={saving || !result.map}
+                onClick={async () => {
+                  if (!result?.map) return
+                  setSaving(true)
+                  setError('')
+                  try {
+                    await saveMap({ title: 'Generated Map', graph: result.map })
+                  } catch (e: unknown) {
+                    setError(e instanceof Error ? e.message : 'Failed to save map')
+                  } finally {
+                    setSaving(false)
+                  }
+                }}
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </section>
+        ) : null}
+        </AuthGate>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
-  );
+  )
 }

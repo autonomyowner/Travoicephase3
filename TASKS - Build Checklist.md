@@ -23,10 +23,10 @@
   - [x] Scaffold Next.js (TypeScript, App Router)
   - [x] Install Tailwind, configure base theme
   - [x] Add ESLint + Prettier configs
-  - [ ] Wire client to server base URL via env
-- [ ] Server app
+  - [x] Wire client to server base URL via env
+- [x] Server app
   - [x] Scaffold Express (TypeScript)
-  - [ ] Add Zod, CORS, helmet, pino logger
+  - [x] Add Zod, CORS, helmet, pino logger
   - [x] Create health endpoint `/health`
 - [x] Local env
   - [x] `.env.example` with OPENAI, SUPABASE, etc.
@@ -37,20 +37,20 @@
 ## Phase 2 — Authentication & Onboarding
 - [ ] Supabase setup
   - [ ] Create project; enable Auth (Email/Magic Link, Google, GitHub)
-  - [ ] Configure RLS policies for multi-tenant safety
-  - [ ] Create tables: `users`, `maps`, `map_versions`, `templates`
+  - [x] Configure RLS policies for multi-tenant safety
+  - [x] Create tables: `users`, `maps`, `map_versions`, `templates`
 - [ ] Client auth
-  - [ ] Install Supabase client; session provider
+  - [x] Install Supabase client; session provider
   - [ ] Pages: Login, Signup, Logout
-  - [ ] Route guards for protected pages
+  - [x] Route guards for protected pages
 - [ ] Onboarding
   - [ ] First-run prompt page (seed text to map)
   - [ ] Save onboarding flags on user
 
 ## Phase 3 — Input Layer (Text & Voice)
-- [ ] Text input
-  - [ ] Component with textarea and submit (Enter / Cmd+Enter)
-  - [ ] Basic validation and character count
+- [x] Text input
+  - [x] Component with textarea and submit (Enter / Cmd+Enter)
+  - [x] Basic validation and character count
 - [ ] Voice input (optional in MVP)
   - [ ] Microphone capture with Web Audio API
   - [ ] Upload endpoint for audio blob
@@ -58,10 +58,10 @@
 
 ## Phase 4 — AI Thought Parsing
 - [ ] Map schema
-  - [ ] Define `ThoughtNode`, `MapGraph` types in `packages/types`
-  - [ ] Zod schema for API validation
+  - [x] Define `ThoughtNode`, `MapGraph` types in `packages/types`
+  - [x] Zod schema for API validation
 - [ ] Generation service
-  - [ ] Server route `/api/maps/generate`
+  - [x] Server route `/api/maps/generate`
   - [ ] Prompt engineering for hierarchical JSON
   - [ ] Normalization and schema validation
   - [ ] Retry/fallback strategy and error handling
@@ -71,8 +71,8 @@
 
 ## Phase 5 — Mind Map Interface (React Flow)
 - [ ] Base canvas
-  - [ ] Integrate React Flow; pan/zoom/fit-to-view
-  - [ ] Render nodes/edges from `MapGraph`
+  - [x] Integrate React Flow; pan/zoom/fit-to-view
+  - [x] Render nodes/edges from `MapGraph`
 - [ ] Node types & styles
   - [ ] Root, Thought, Action, Emotion nodes
   - [ ] Tailwind-based styling and icons
@@ -89,7 +89,7 @@
 ## Phase 6 — Persistence, Versioning, Recovery
 - [ ] Persistence
   - [ ] Save map JSON and layout to Supabase
-  - [ ] Link maps to user id; title/description metadata
+  - [x] Link maps to user id; title/description metadata
 - [ ] Versioning
   - [ ] Auto-save on throttled interval
   - [ ] Manual checkpoints with labels
