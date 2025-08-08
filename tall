@@ -1,0 +1,5 @@
+[33m7d57c7c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat(auth, pricing): add pricing page and theme-aligned login/signup; hide global board on pricing; add header Pricing link
+[33m72df254[m feat: add landing page with cream/gold dot background; create /home mindmap hub; conditional GlobalBoard; header gradient text; fix types and pass builds
+[33m2ae2484[m Mind map UX: interactive canvas (drag/connect, inline label edit, toolbar), editor page with auto-save + manual save, PATCH /api/maps/:id, upsert users; fix loops; add not-found page; update tasks checklist
+[33m65e50d5[m feat(auth): add login/signup/logout pages, onboarding flow; expose links in header; wire saving and list views; ensure server imports types package
+[33m57ce49a[m feat(monorepo): scaffold client + server, shared types, base tsconfig; mark tasks [x]
