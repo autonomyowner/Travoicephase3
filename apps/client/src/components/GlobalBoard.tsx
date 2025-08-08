@@ -53,6 +53,28 @@ export default function GlobalBoard() {
     setQuickText((prev) => (prev ? prev + "\n" : "") + text)
   }, [])
 
+  const handleDelta = useCallback((delta: { nodes?: any[]; edges?: any[] }) => {
+    if (!delta) return
+    setGraph((prev) => {
+      const next = { nodes: prev.nodes.slice(), edges: prev.edges.slice() }
+      const existingIds = new Set(next.nodes.map((n) => n.id))
+      for (const n of (delta.nodes || [])) {
+        if (!existingIds.has(n.id)) {
+          next.nodes.push({ id: n.id, label: n.label, position: n.position, type: n.type })
+          existingIds.add(n.id)
+        }
+      }
+      const existingEdgeIds = new Set(next.edges.map((e) => e.id))
+      for (const e of (delta.edges || [])) {
+        if (!existingEdgeIds.has(e.id)) {
+          next.edges.push({ id: e.id, source: String(e.source), target: String(e.target), label: e.label })
+          existingEdgeIds.add(e.id)
+        }
+      }
+      return next
+    })
+  }, [])
+
   // Accept JSON import events globally (ensures header Import works on any page)
   useEffect(() => {
     const layoutImported = (g: { nodes: Node[]; edges: Edge[] }): { nodes: Node[]; edges: Edge[] } => {
@@ -102,7 +124,7 @@ export default function GlobalBoard() {
       <div className="fixed top-16 left-3 z-40 w-[300px] pointer-events-auto">
         <div className="rounded-lg border border-white/20 bg-black/40 backdrop-blur p-2 shadow-xl">
           <div className="text-[11px] font-medium mb-1 text-white">Voice</div>
-          <VoiceRecorder onTranscribed={handleTranscribed} />
+          <VoiceRecorder mode="live" onTranscribed={handleTranscribed} onDelta={handleDelta} />
         </div>
       </div>
       {/* Top-right: Quick text to nodes */}

@@ -68,6 +68,37 @@ export async function transcribeVoice(audioBlob: Blob): Promise<{ text: string }
   return res.json()
 }
 
+// Live voice session (mock-first, SSE)
+export async function createVoiceSession(): Promise<{ sessionId: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/voice/session`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Create voice session failed: ${res.status}`)
+  return res.json()
+}
+
+export function streamVoiceSession(sessionId: string, onEvent: (evt: { type: 'transcript'|'delta'|'summary'|'heartbeat'; data: any }) => void): EventSource {
+  const es = new EventSource(`${API_BASE_URL}/api/voice/session/${sessionId}/stream`)
+  es.addEventListener('transcript', (e) => onEvent({ type: 'transcript', data: JSON.parse((e as MessageEvent).data) }))
+  es.addEventListener('delta', (e) => onEvent({ type: 'delta', data: JSON.parse((e as MessageEvent).data) }))
+  es.addEventListener('summary', (e) => onEvent({ type: 'summary', data: JSON.parse((e as MessageEvent).data) }))
+  es.addEventListener('heartbeat', (e) => onEvent({ type: 'heartbeat', data: JSON.parse((e as MessageEvent).data) }))
+  return es
+}
+
+export async function sendVoiceChunk(sessionId: string, blob: Blob): Promise<void> {
+  const form = new FormData()
+  form.append('audio', blob, 'chunk.webm')
+  const res = await fetch(`${API_BASE_URL}/api/voice/session/${sessionId}/chunk`, {
+    method: 'POST',
+    body: form
+  })
+  if (!res.ok) throw new Error(`Send chunk failed: ${res.status}`)
+}
+
+export async function finishVoiceSession(sessionId: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/voice/session/${sessionId}/finish`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Finish session failed: ${res.status}`)
+}
+
 export type MapListItem = { id: string; title: string; created_at: string }
 
 export async function listMaps(): Promise<MapListItem[]> {

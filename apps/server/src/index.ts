@@ -24,6 +24,118 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() })
 })
 
+// ===== Real-time Voice Session (Mock-first, SSE) =====
+type TranscriptChunk = { text: string; tsStart?: number; tsEnd?: number; speaker?: string }
+type MapDelta = { nodes?: Array<{ id: string; label: string; type?: 'root'|'thought'|'action'|'emotion'; emotion?: 'positive'|'neutral'|'negative'; priority?: number; position?: { x: number; y: number } }>; edges?: Array<{ id: string; source: string; target: string; label?: string }> }
+
+type Session = {
+  id: string
+  createdAt: number
+  transcript: TranscriptChunk[]
+  map: { nodes: Array<{ id: string; label: string; type?: 'root'|'thought'|'action'|'emotion'; position?: { x:number; y:number }; emotion?: 'positive'|'neutral'|'negative' }>; edges: Array<{ id: string; source: string; target: string; label?: string }> }
+  subscribers: Set<import('express').Response>
+  angle: number // simple radial placement for new nodes
+}
+
+const sessions = new Map<string, Session>()
+
+function sendSse(res: import('express').Response, event: string, data: unknown) {
+  res.write(`event: ${event}\n`)
+  res.write(`data: ${JSON.stringify(data)}\n\n`)
+}
+
+function ensureRoot(session: Session) {
+  const hasRoot = session.map.nodes.some((n) => n.type === 'root')
+  if (!hasRoot) {
+    session.map.nodes.push({ id: 'root', label: 'Root', type: 'root', position: { x: 0, y: 0 } })
+  }
+}
+
+function mockReasonerDelta(session: Session, chunks: TranscriptChunk[]): MapDelta {
+  // Very basic heuristic: extract an emotion word if present; otherwise neutral
+  const full = chunks.map((c) => c.text).join(' ').trim()
+  const lower = full.toLowerCase()
+  let emotion: 'positive'|'neutral'|'negative' = 'neutral'
+  if (/\b(optimistic|excited|proud|happy|confident)\b/.test(lower)) emotion = 'positive'
+  if (/\b(worried|anxious|blocked|stressed|sad)\b/.test(lower)) emotion = 'negative'
+  let label = full.replace(/\s+/g, ' ').slice(0, 120)
+  if (emotion !== 'neutral') label = `${emotion} ${label}`
+
+  ensureRoot(session)
+  // place in a circle around root
+  const radius = 240
+  session.angle = (session.angle + 32) % 360
+  const rad = (session.angle * Math.PI) / 180
+  const x = Math.round(Math.cos(rad) * radius)
+  const y = Math.round(Math.sin(rad) * radius)
+  const id = `n-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+  const node = { id, label: label || 'thought', type: 'thought' as const, emotion, position: { x, y } }
+  const edge = { id: `e-root-${id}`, source: 'root', target: id }
+  return { nodes: [node], edges: [edge] }
+}
+
+app.post('/api/voice/session', async (_req, res) => {
+  const id = Math.random().toString(36).slice(2)
+  const session: Session = {
+    id,
+    createdAt: Date.now(),
+    transcript: [],
+    map: { nodes: [], edges: [] },
+    subscribers: new Set(),
+    angle: 0,
+  }
+  sessions.set(id, session)
+  res.json({ sessionId: id })
+})
+
+app.get('/api/voice/session/:id/stream', (req, res) => {
+  const s = sessions.get(req.params.id)
+  if (!s) return res.status(404).end()
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+  res.flushHeaders?.()
+  s.subscribers.add(res)
+  // Send initial heartbeat
+  sendSse(res, 'heartbeat', { t: Date.now() })
+  req.on('close', () => {
+    s.subscribers.delete(res)
+  })
+})
+
+app.post('/api/voice/session/:id/chunk', (req, res) => {
+  const s = sessions.get(req.params.id)
+  if (!s) return res.status(404).json({ error: 'Session not found' })
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }).single('audio')
+  upload(req, res as any, (err: any) => {
+    if (err) return res.status(400).json({ error: 'Upload failed' })
+    const file = (req as any).file as Express.Multer.File | undefined
+    // MOCK: ignore audio content; fabricate a transcript chunk
+    const text = file?.buffer?.length ? `heard ${Math.min(12, Math.ceil(file.buffer.length / 2000))} words about your topic` : 'thinking about goals and projects'
+    const chunk: TranscriptChunk = { text, tsStart: Date.now(), tsEnd: Date.now() }
+    s.transcript.push(chunk)
+    // emit transcript
+    for (const sub of s.subscribers) sendSse(sub, 'transcript', { chunks: [chunk] })
+    // reason and emit a delta
+    const delta = mockReasonerDelta(s, [chunk])
+    // merge into in-memory map
+    if (delta.nodes) s.map.nodes.push(...delta.nodes)
+    if (delta.edges) s.map.edges.push(...delta.edges)
+    for (const sub of s.subscribers) sendSse(sub, 'delta', { delta })
+    res.status(202).json({ ok: true })
+  })
+})
+
+app.post('/api/voice/session/:id/finish', (req, res) => {
+  const s = sessions.get(req.params.id)
+  if (!s) return res.status(404).json({ error: 'Session not found' })
+  // Simple summary
+  const summary = s.transcript.map((c) => c.text).join(' ').slice(0, 400)
+  for (const sub of s.subscribers) sendSse(sub, 'summary', { text: summary })
+  // Optionally persist if authenticated (skipped for mock-first)
+  res.json({ ok: true })
+})
+
 // List current user's maps (id, title, created_at)
 app.get('/api/maps', async (req, res) => {
   try {
