@@ -51,6 +51,26 @@ function ensureRoot(session: Session) {
   }
 }
 
+function findNonOverlappingPosition(session: Session, desired: { x: number; y: number }, minGap = 120): { x: number; y: number } {
+  const existing = session.map.nodes.map((n) => n.position).filter(Boolean) as Array<{ x: number; y: number }>
+  // Quick accept if far enough from all
+  const isFree = (p: { x: number; y: number }) => existing.every((q) => Math.hypot(p.x - q.x, p.y - q.y) >= minGap)
+  if (isFree(desired)) return desired
+  // Spiral search around desired
+  const maxRings = 12
+  const step = 30 // degrees
+  for (let ring = 1; ring <= maxRings; ring++) {
+    const radius = ring * 24
+    for (let deg = 0; deg < 360; deg += step) {
+      const rad = (deg * Math.PI) / 180
+      const cand = { x: Math.round(desired.x + Math.cos(rad) * radius), y: Math.round(desired.y + Math.sin(rad) * radius) }
+      if (isFree(cand)) return cand
+    }
+  }
+  // Fallback: place a bit offset
+  return { x: desired.x + 16, y: desired.y + 16 }
+}
+
 function mockReasonerDelta(session: Session, chunks: TranscriptChunk[]): MapDelta {
   // Very basic heuristic: extract an emotion word if present; otherwise neutral
   const full = chunks.map((c) => c.text).join(' ').trim()
@@ -107,9 +127,10 @@ function mockReasonerDelta(session: Session, chunks: TranscriptChunk[]): MapDelt
     x = Math.round(Math.cos(rad) * radius)
     y = Math.round(Math.sin(rad) * radius)
   }
-
+  // ensure non-overlapping position
+  const pos = findNonOverlappingPosition(session, { x, y })
   const id = `n-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
-  const node = { id, label: label || 'thought', type: nodeType, emotion, position: { x, y } }
+  const node = { id, label: label || 'thought', type: nodeType, emotion, position: pos }
   const edge = { id: `e-${parentId}-${id}`, source: parentId, target: id }
   return { nodes: [node], edges: [edge] }
 }
