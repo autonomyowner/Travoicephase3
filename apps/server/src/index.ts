@@ -61,16 +61,56 @@ function mockReasonerDelta(session: Session, chunks: TranscriptChunk[]): MapDelt
   let label = full.replace(/\s+/g, ' ').slice(0, 120)
   if (emotion !== 'neutral') label = `${emotion} ${label}`
 
+  // Simple type heuristic
+  const isAction = /\b(i will|let's|we should|buy|buying|purchase|ship|build|launch)\b/.test(lower)
+  const nodeType: 'thought'|'action' = isAction ? 'action' : 'thought'
+
+  // Tokenize and find a similar existing node to attach to (associative linking)
+  const stop = new Set(['i','the','and','of','my','to','on','in','a','an','we','you','our','about','think','thinking','work','working','hard','project'])
+  const tokenize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean).filter(w => !stop.has(w))
+  const newTokens = new Set(tokenize(lower))
+
   ensureRoot(session)
-  // place in a circle around root
-  const radius = 240
-  session.angle = (session.angle + 32) % 360
-  const rad = (session.angle * Math.PI) / 180
-  const x = Math.round(Math.cos(rad) * radius)
-  const y = Math.round(Math.sin(rad) * radius)
+  // find best match among existing non-root nodes
+  let parentId = 'root'
+  let bestOverlap = 0
+  let parentPos: { x: number; y: number } | null = null
+  for (const n of session.map.nodes) {
+    if (n.id === 'root') continue
+    const toks = new Set(tokenize(n.label || ''))
+    let overlap = 0
+    for (const t of newTokens) if (toks.has(t)) overlap++
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap
+      parentId = n.id
+      parentPos = n.position ?? null
+    }
+  }
+  // threshold: if we have at least 1 common token, attach to that similar node; else attach to root
+  if (bestOverlap < 1) {
+    parentId = 'root'
+    parentPos = { x: 0, y: 0 }
+  }
+
+  // position: near parent if similar found; else around root
+  let x = 0, y = 0
+  if (parentId !== 'root' && parentPos) {
+    const radius = 140
+    session.angle = (session.angle + 40) % 360
+    const rad = (session.angle * Math.PI) / 180
+    x = Math.round(parentPos.x + Math.cos(rad) * radius)
+    y = Math.round(parentPos.y + Math.sin(rad) * radius)
+  } else {
+    const radius = 240
+    session.angle = (session.angle + 32) % 360
+    const rad = (session.angle * Math.PI) / 180
+    x = Math.round(Math.cos(rad) * radius)
+    y = Math.round(Math.sin(rad) * radius)
+  }
+
   const id = `n-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
-  const node = { id, label: label || 'thought', type: 'thought' as const, emotion, position: { x, y } }
-  const edge = { id: `e-root-${id}`, source: 'root', target: id }
+  const node = { id, label: label || 'thought', type: nodeType, emotion, position: { x, y } }
+  const edge = { id: `e-${parentId}-${id}`, source: parentId, target: id }
   return { nodes: [node], edges: [edge] }
 }
 
