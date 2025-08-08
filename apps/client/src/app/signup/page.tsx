@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase, supabaseConfigured } from "../../lib/supabase"
 import { useSearchParams } from "next/navigation"
 
-export default function SignupPage() {
+function SignupPageInner() {
   const router = useRouter()
   const params = useSearchParams()
   const [email, setEmail] = useState("")
@@ -101,6 +101,14 @@ export default function SignupPage() {
         </p>
       </section>
     </main>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm opacity-70">Loading…</div>}>
+      <SignupPageInner />
+    </Suspense>
   )
 }
 
