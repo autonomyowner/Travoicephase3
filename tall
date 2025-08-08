@@ -1,5 +1,127 @@
-[33m7d57c7c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat(auth, pricing): add pricing page and theme-aligned login/signup; hide global board on pricing; add header Pricing link
-[33m72df254[m feat: add landing page with cream/gold dot background; create /home mindmap hub; conditional GlobalBoard; header gradient text; fix types and pass builds
-[33m2ae2484[m Mind map UX: interactive canvas (drag/connect, inline label edit, toolbar), editor page with auto-save + manual save, PATCH /api/maps/:id, upsert users; fix loops; add not-found page; update tasks checklist
-[33m65e50d5[m feat(auth): add login/signup/logout pages, onboarding flow; expose links in header; wire saving and list views; ensure server imports types package
-[33m57ce49a[m feat(monorepo): scaffold client + server, shared types, base tsconfig; mark tasks [x]
+To enhance NeuroCanvas with neuroscience-inspired depth and human-centric design, integrating principles from how the brain actually works can supercharge both the AI modeling and UX design. Here's a structured set of insights you can use to bridge neuroscience and product design:
+
+🧠 Human Brain Insights for NeuroCanvas
+1. How the Brain Organizes Thoughts
+The brain organizes ideas in non-linear, associative networks — not lists or rows.
+
+Brain Feature	UX Implication for NeuroCanvas
+Neural Networks	Mimic associative linking in maps (dynamic connections between unrelated nodes).
+Hemispheric Specialization	Left brain = logical/sequential; Right brain = creative/holistic. Let users toggle between “structured” and “freeform” views.
+Default Mode Network (DMN)	Activated during daydreaming and introspection. NeuroCanvas should encourage reflection through calm UX and AI prompts.
+
+2. Working Memory Limits (The “Magical 5”)
+Human working memory can hold 4–7 items at a time — known as Miller’s Law.
+
+🔢 NeuroCanvas Tip: Limit visible nodes to clusters of ~5 at a time. Use zoom or “progressive disclosure” to reduce cognitive load.
+
+3. Cognitive Load Theory
+The brain gets overwhelmed when too much is processed at once.
+
+🔍 Apply chunking: group related thoughts automatically.
+
+🌳 Use collapsible branches: reduce map complexity visually.
+
+🧭 Offer “focus mode” to deep-dive into a sub-node and temporarily hide the rest.
+
+4. Memory Formation & Retrieval
+The brain uses spatial, emotional, and visual cues to encode and retrieve memories.
+
+🖼️ Add visual tags (emojis, icons, sketches) to nodes.
+
+🎨 Color-code by emotion (as you already planned — great move).
+
+🧩 Enable node “timeline mode” to review how ideas evolved (mirrors hippocampus behavior in tracking events).
+
+5. Emotions & Thinking
+Emotions are central to cognition, not separate.
+
+❤️ The amygdala helps prioritize emotionally charged memories.
+
+🧠 Emotional tone can alter thinking style (creative, analytical, fearful, excited).
+
+NeuroCanvas Feature Suggestions:
+
+Insight	Feature
+Positive thoughts open creativity	Recommend branching during green-toned nodes.
+Stress narrows thinking	When red nodes are clustered, suggest zooming out or AI reflection prompts.
+Mood shifts thinking pathways	Use sentiment analytics to change visual "mood themes" (e.g., cloudy, energetic).
+
+6. Neuroplasticity & Learning
+The brain rewires itself based on experience and feedback.
+
+Add AI-driven nudges: “Would you like to reframe this thought?” or “Try connecting this to another idea.”
+
+Support revision history: brains change — maps should too.
+
+7. Visual & Spatial Cognition
+The brain is highly visual-spatial — especially the right hemisphere.
+
+🧭 Let users move nodes freely, not locked to strict grids.
+
+🌀 Offer “radial view” and “concept cloud” layouts (people remember spatial positions).
+
+8. The Brain is Predictive
+According to modern neuroscience (e.g. Karl Friston), the brain is a prediction machine.
+
+🔮 NeuroCanvas could offer predictive node suggestions: “You often explore productivity after startup ideas — want to add that?”
+
+9. Neural Oscillations & Focus States
+Different brainwave states (alpha, beta, theta) relate to various cognitive states:
+
+State	Frequency	State	UX Hint
+Alpha	8–12 Hz	Relaxed reflection	Use this for review mode or retrospection.
+Beta	13–30 Hz	Active thinking	For live brainstorming and building.
+Theta	4–7 Hz	Creative insight	Possibly tie to “Creative Coaching GPT” mode.
+
+10. Mirror Neurons & Collaboration
+Humans simulate others’ thinking via mirror neurons — basis of empathy & learning.
+
+👥 Highlight collaborators’ branches with small profile pic + emotion color.
+
+🗣️ Allow users to “replay” a collaborator’s thinking process like a story.
+
+🧬 Bonus: Feature Ideas Inspired by the Brain
+Brain Function	Feature
+Dreaming / DMN	“Dream mode”: AI freely builds new branches while you watch.
+Memory Consolidation	“End of session summary” maps — just like REM sleep processes your day.
+Synaptic Pruning	Suggest removal of unused/unlinked nodes.
+
+Would you like me to map these into specific PRD sections, wireframes, or feature specs? I can also generate node mockups or AR/VR concept overlays if you're exploring that future vision.
+
+Let me know which part of the brain you'd like to go deeper on — memory, emotion, focus, creativity, etc.
+
+Your file explains the human neural network in a product-design context by showing how actual brain functions can inspire your real-time voice-to-mind-map system.
+
+Here’s the core neuroscience breakdown from it:
+
+1. Thought Organization – The brain stores and links ideas in non-linear associative networks, not lists.
+→ In design, this means letting mind-map nodes link freely and dynamically, even between unrelated topics.
+
+2. Hemispheric Specialization – Left hemisphere is more logical/sequential, right is more creative/holistic.
+→ Offer “structured” and “freeform” views.
+
+3. Working Memory Limit (“Magical 5”) – People can hold ~4–7 items at once.
+→ Show only small clusters at a time; zoom for more.
+
+4. Cognitive Load Theory – Too much visible info overwhelms the brain.
+→ Use chunking, collapsible branches, and focus mode.
+
+5. Memory Encoding & Retrieval – Spatial, emotional, and visual cues strengthen recall.
+→ Add colors, icons, and “timeline” modes to track idea evolution.
+
+6. Emotions in Thinking – Emotional state changes how we think and what we remember.
+→ Adapt UI themes and prompts based on sentiment.
+
+7. Neuroplasticity – The brain rewires with use and feedback.
+→ Let users edit freely, track history, and suggest new connections.
+
+8. Visual & Spatial Cognition – The brain remembers positions and layouts.
+→ Allow free-form movement, radial views, and concept clouds.
+
+9. Predictive Brain – The brain constantly predicts what comes next.
+→ Suggest likely next nodes automatically.
+
+10. Brainwave States – Alpha (relaxed), Beta (focused), Theta (creative insight).
+→ Match UI modes to these states — review, active build, creative brainstorming.
+
+11. Mirror Neurons – Enable empathy and learning by “replaying” others’ thinking paths.
