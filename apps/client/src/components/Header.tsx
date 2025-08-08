@@ -58,6 +58,7 @@ export default function Header() {
         {/* Center: Nav + Search */}
         <div className="hidden md:flex items-center gap-2 ml-2">
           <Link href="/home" className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">Home</Link>
+          <Link href="/pricing" className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">Pricing</Link>
           <div className="relative">
             <button onClick={() => setMenuOpen((v) => !v)} className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">Maps</button>
             {menuOpen ? (
