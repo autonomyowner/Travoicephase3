@@ -41,7 +41,7 @@ function LoginForm() {
     e.preventDefault()
     if (!supabase) return
     setStatus('Sending magic link…')
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
     setStatus(error ? `Error: ${error.message}` : 'Check your email for a magic link.')
   }
   return (
