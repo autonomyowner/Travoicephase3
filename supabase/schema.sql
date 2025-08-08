@@ -43,6 +43,7 @@ create table if not exists public.map_versions (
   id uuid primary key default gen_random_uuid(),
   map_id uuid not null references public.maps(id) on delete cascade,
   version int not null,
+  label text,
   graph jsonb not null,
   layout jsonb,
   created_at timestamptz not null default now()

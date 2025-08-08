@@ -6,7 +6,10 @@ const EnvSchema = z.object({
   OPENROUTER_API_KEY: z.string().min(1).optional(),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
-  SUPABASE_SERVICE_ROLE: z.string().optional()
+  SUPABASE_SERVICE_ROLE: z.string().optional(),
+  AI_PROVIDER: z.enum(['mock', 'openai']).default('mock').optional(),
+  OPENAI_MODEL: z.string().optional(),
+  WHISPER_MODEL: z.string().optional()
 })
 
 export const env = EnvSchema.parse(process.env)

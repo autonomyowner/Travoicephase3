@@ -15,7 +15,9 @@ exports.MapEdgeSchema = zod_1.z.object({
     id: zod_1.z.string(),
     source: zod_1.z.string(),
     target: zod_1.z.string(),
-    label: zod_1.z.string().optional()
+    label: zod_1.z.string().optional(),
+    curve: zod_1.z.enum(['flexible', 'straight']).optional(),
+    line: zod_1.z.enum(['dashed', 'solid']).optional()
 });
 exports.MapGraphSchema = zod_1.z.object({
     nodes: zod_1.z.array(exports.MapNodeSchema),

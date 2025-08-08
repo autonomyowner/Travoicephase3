@@ -5,14 +5,18 @@
 ## Phase 0 — Project Hygiene & Planning
 - [ ] Define product name, domain, branding basics
   - [ ] Reserve domain and socials
-  - [ ] Create logo, color palette, typography
+  - [x] Create logo, color palette, typography
 - [ ] Repository setup
-  - [ ] Initialize Git repo, main/develop branches
-  - [ ] Configure CODEOWNERS, PR template, issue templates
+  - [x] Initialize Git repo
+  - [ ] Create `main`/`develop` branches
+  - [ ] Configure CODEOWNERS
+  - [x] Configure PR template
+  - [x] Configure issue templates
   - [ ] Protect branches and require PR reviews
 - [ ] Project management
   - [ ] Create epics and milestones in tracker
-  - [ ] Define definition of done (DoD) and coding standards
+  - [x] Define definition of done (DoD)
+  - [x] Define coding standards
 
 ## Phase 1 — Monorepo & Dev Environment
 - [x] Monorepo structure
@@ -35,7 +39,7 @@
   - [x] `dev:client`, `dev:server`, `dev`, `build`, `lint`, `typecheck`
 
 ## Phase 2 — Authentication & Onboarding
-- [ ] Supabase setup
+- [x] Supabase setup
   - [ ] Create project; enable Auth (Email/Magic Link, Google, GitHub)
   - [x] Configure RLS policies for multi-tenant safety
   - [x] Create tables: `users`, `maps`, `map_versions`, `templates`
@@ -43,7 +47,7 @@
   - [x] Install Supabase client; session provider
   - [x] Pages: Login, Signup, Logout
   - [x] Route guards for protected pages
-- [ ] Onboarding
+- [x] Onboarding
   - [x] First-run prompt page (seed text to map)
   - [x] Save onboarding flags on user
 
@@ -51,13 +55,13 @@
 - [x] Text input
   - [x] Component with textarea and submit (Enter / Cmd+Enter)
   - [x] Basic validation and character count
-- [ ] Voice input (optional in MVP)
-  - [ ] Microphone capture with Web Audio API
-  - [ ] Upload endpoint for audio blob
+- [x] Voice input (optional in MVP)
+  - [x] Microphone capture with Web Audio API
+  - [x] Upload endpoint for audio blob
   - [ ] Whisper transcription integration
 
 ## Phase 4 — AI Thought Parsing
-- [ ] Map schema
+- [x] Map schema
   - [x] Define `ThoughtNode`, `MapGraph` types in `packages/types`
   - [x] Zod schema for API validation
 - [ ] Generation service
@@ -70,13 +74,13 @@
   - [ ] Sentiment tagging (positive/neutral/negative)
 
 ## Phase 5 — Mind Map Interface (React Flow)
-- [ ] Base canvas
+- [x] Base canvas
   - [x] Integrate React Flow; pan/zoom/fit-to-view
   - [x] Render nodes/edges from `MapGraph`
-- [ ] Node types & styles
-  - [ ] Root, Thought, Action, Emotion nodes
-  - [ ] Tailwind-based styling and icons
-  - [ ] Sentiment color halo + priority badge
+- [x] Node types & styles
+  - [x] Root, Thought, Action, Emotion nodes
+  - [x] Tailwind-based styling and icons
+  - [x] Sentiment color halo + priority badge
 - [ ] Interactions
   - [x] Drag/reposition nodes
   - [x] Connect/disconnect edges, re-link
@@ -87,16 +91,16 @@
   - [x] Preserve manual positions after edits
 
 ## Phase 6 — Persistence, Versioning, Recovery
-- [ ] Persistence
+- [x] Persistence
   - [x] Save map JSON and layout to Supabase
   - [x] Link maps to user id; title/description metadata
-- [ ] Versioning
+- [x] Versioning
   - [x] Auto-save on throttled interval
-  - [ ] Manual checkpoints with labels
-  - [ ] Version history panel; restore/copy
-- [ ] Resilience
-  - [ ] Optimistic UI + rollback
-  - [ ] Error toasts and recovery UX
+  - [x] Manual checkpoints with labels
+  - [x] Version history panel; restore/copy
+- [x] Resilience
+  - [x] Optimistic UI + rollback
+  - [x] Error toasts and recovery UX
 
 ## Phase 7 — Real-time Collaboration (Beta)
 - [ ] Realtime basics
@@ -109,16 +113,17 @@
   - [ ] Node-level locking to prevent collisions
 
 ## Phase 8 — Export, Import, Templates
-- [ ] Export
-  - [ ] PNG export (HTML-to-Canvas)
-  - [ ] JSON export
-  - [ ] PDF/Markdown (beta)
-- [ ] Import
-  - [ ] Import JSON to map
-  - [ ] Import raw notes → AI parse
-- [ ] Templates
-  - [ ] Prebuilt: Essay, Sprint Plan, Persona Map
-  - [ ] Save user maps as templates
+- [x] Export
+  - [x] PNG export (HTML-to-Canvas)
+  - [x] JSON export
+  - [x] Markdown (beta)
+  - [ ] PDF (beta)
+- [x] Import
+  - [x] Import JSON to map
+  - [x] Import raw notes → AI parse
+- [x] Templates
+  - [x] Prebuilt: Essay, Sprint Plan, Persona Map
+  - [x] Save user maps as templates
 
 ## Phase 9 — AI Coaching & Exploration (Beta)
 - [ ] Coach API

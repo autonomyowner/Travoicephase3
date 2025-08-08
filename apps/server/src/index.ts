@@ -7,8 +7,10 @@ import pino from 'pino'
 import pinoHttp from 'pino-http'
 import { z } from 'zod'
 import { supabase } from './supabase'
-import jwtDecode from 'jwt-decode'
+import { jwtDecode } from 'jwt-decode'
 import { MapGraphSchema } from '@neurocanvas/types'
+import { generateMapWithAI, getAIConfig, transcribeAudio } from './ai'
+import multer from 'multer'
 
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' })
 const app = express()
@@ -192,29 +194,20 @@ const GenerateRequest = z.object({
   mode: z.enum(['text', 'voice']).default('text')
 })
 
+app.get('/api/ai/providers', (_req, res) => {
+  res.json(getAIConfig())
+})
+
 app.post('/api/maps/generate', async (req, res) => {
   const parsed = GenerateRequest.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ error: 'Invalid request', issues: parsed.error.issues })
   }
-  // Mock response for MVP wiring
-  const id = Math.random().toString(36).slice(2)
-  const map = {
-    nodes: [
-      { id: `root-${id}`, label: 'Root', type: 'root', position: { x: 0, y: 0 } },
-      { id: `n1-${id}`, label: 'Idea 1', type: 'thought', position: { x: 200, y: -80 } },
-      { id: `n2-${id}`, label: 'Action A', type: 'action', position: { x: 220, y: 120 } }
-    ],
-    edges: [
-      { id: `e1-${id}`, source: `root-${id}`, target: `n1-${id}` },
-      { id: `e2-${id}`, source: `root-${id}`, target: `n2-${id}` }
-    ]
-  }
-  const safe = MapGraphSchema.safeParse(map)
+  const result = await generateMapWithAI(parsed.data)
+  const safe = MapGraphSchema.safeParse(result.map)
   if (!safe.success) {
     return res.status(500).json({ error: 'Internal schema error', issues: safe.error.issues })
   }
-  // Optional: if Authorization: Bearer <jwt> is provided, persist
   try {
     const authHeader = req.header('authorization')
     const jwt = authHeader?.toLowerCase().startsWith('bearer ')
@@ -222,18 +215,142 @@ app.post('/api/maps/generate', async (req, res) => {
       : null
     if (jwt && supabase) {
       const client = supabase
-      // get user id
       const { data: userData, error: userError } = await client.auth.getUser(jwt)
       if (!userError && userData?.user) {
         const userId = userData.user.id
         await client.from('users').upsert({ id: userId }, { onConflict: 'id' })
-        await client.from('maps').insert({ user_id: userId, title: 'Generated Map', graph: map }).select('id').single()
+        await client.from('maps').insert({ user_id: userId, title: 'Generated Map', graph: result.map }).select('id').single()
       }
     }
-  } catch (_e) {
-    // ignore persistence errors for now
+  } catch (_e) {}
+  res.json(result)
+})
+
+// Stub voice transcription until Whisper is configured
+app.post('/api/voice/transcribe', async (_req, res) => {
+  try {
+    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }).single('audio')
+    upload(_req, res as any, async (err: any) => {
+      if (err) return res.status(400).json({ error: 'Upload failed' })
+      const file = (_req as any).file as Express.Multer.File | undefined
+      const result = await transcribeAudio(file ? { buffer: file.buffer, mimetype: file.mimetype } : undefined)
+      res.json(result)
+    })
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? 'Unexpected error' })
   }
-  res.json({ map, summary: 'Mock map generated for wiring.' })
+})
+
+// Templates API
+const CreateTemplateRequest = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  graph: MapGraphSchema,
+  is_public: z.boolean().optional()
+})
+
+// List templates: public and, if authenticated, also own
+app.get('/api/templates', async (req, res) => {
+  try {
+    const authHeader = req.header('authorization')
+    const jwt = authHeader?.toLowerCase().startsWith('bearer ')
+      ? authHeader.slice(7).trim()
+      : null
+
+    let userId: string | null = null
+    if (jwt && supabase) {
+      try { userId = (jwtDecode(jwt) as any)?.sub ?? null } catch {}
+      if (!userId) {
+        const { data: userData } = await supabase.auth.getUser(jwt)
+        userId = userData?.user?.id ?? null
+      }
+    }
+
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
+
+    let query = supabase
+      .from('templates')
+      .select('id,title,description,is_public,created_at,user_id')
+      .order('created_at', { ascending: false })
+
+    if (userId) {
+      // public OR own
+      // Supabase JS v2: use .or() with filter string
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      query = query.or(`is_public.eq.true,user_id.eq.${userId}`)
+    } else {
+      query = query.eq('is_public', true)
+    }
+
+    const { data, error } = await query
+    if (error) return res.status(500).json({ error: error.message })
+    res.json({ templates: (data ?? []).map((t: any) => ({ id: t.id, title: t.title, description: t.description, is_public: t.is_public, created_at: t.created_at })) })
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? 'Unexpected error' })
+  }
+})
+
+// Create a template (auth required)
+app.post('/api/templates', async (req, res) => {
+  try {
+    const parsed = CreateTemplateRequest.safeParse(req.body)
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues })
+
+    const authHeader = req.header('authorization')
+    const jwt = authHeader?.toLowerCase().startsWith('bearer ')
+      ? authHeader.slice(7).trim()
+      : null
+    if (!jwt || !supabase) return res.status(401).json({ error: 'Unauthorized' })
+    const { data: userData, error: userError } = await supabase.auth.getUser(jwt)
+    if (userError || !userData?.user) return res.status(401).json({ error: 'Unauthorized' })
+    const userId = userData.user.id
+
+    const { data, error } = await supabase
+      .from('templates')
+      .insert({
+        user_id: userId,
+        title: parsed.data.title,
+        description: parsed.data.description ?? null,
+        graph: parsed.data.graph,
+        is_public: parsed.data.is_public ?? false
+      })
+      .select('id')
+      .single()
+    if (error) return res.status(500).json({ error: error.message })
+    res.json({ id: data.id })
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? 'Unexpected error' })
+  }
+})
+
+// Get a template by id. Public accessible; private only to owner
+app.get('/api/templates/:id', async (req, res) => {
+  try {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' })
+    const { data: tpl, error } = await supabase
+      .from('templates')
+      .select('id,title,description,is_public,graph,user_id,created_at')
+      .eq('id', req.params.id)
+      .maybeSingle()
+    if (error) return res.status(500).json({ error: error.message })
+    if (!tpl) return res.status(404).json({ error: 'Not found' })
+
+    if (!tpl.is_public) {
+      const authHeader = req.header('authorization')
+      const jwt = authHeader?.toLowerCase().startsWith('bearer ')
+        ? authHeader.slice(7).trim()
+        : null
+      if (!jwt) return res.status(404).json({ error: 'Not found' })
+      const { data: userData } = await supabase.auth.getUser(jwt)
+      const userId = userData?.user?.id
+      if (!userId || userId !== tpl.user_id) return res.status(404).json({ error: 'Not found' })
+    }
+
+    res.json({ template: { id: tpl.id, title: tpl.title, description: tpl.description, is_public: tpl.is_public, graph: tpl.graph, created_at: tpl.created_at } })
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? 'Unexpected error' })
+  }
 })
 
 // Create a new map version
@@ -263,7 +380,7 @@ app.get('/api/maps/:id/versions', async (req, res) => {
 
     const { data, error } = await supabase
       .from('map_versions')
-      .select('id,version,created_at')
+      .select('id,version,label,created_at')
       .eq('map_id', req.params.id)
       .order('version', { ascending: false })
     if (error) return res.status(500).json({ error: error.message })
@@ -311,13 +428,91 @@ app.post('/api/maps/:id/versions', async (req, res) => {
       .insert({
         map_id: req.params.id,
         version: nextVersion,
+        label: parsed.data.label ?? null,
         graph: parsed.data.graph,
         layout: parsed.data.layout
       })
-      .select('id,version,created_at')
+      .select('id,version,label,created_at')
       .single()
     if (error) return res.status(500).json({ error: error.message })
     res.json({ version: data })
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? 'Unexpected error' })
+  }
+})
+
+// Get a specific version details
+app.get('/api/maps/:id/versions/:version', async (req, res) => {
+  try {
+    const authHeader = req.header('authorization')
+    const jwt = authHeader?.toLowerCase().startsWith('bearer ')
+      ? authHeader.slice(7).trim()
+      : null
+    if (!jwt || !supabase) return res.status(401).json({ error: 'Unauthorized' })
+    const { data: userData, error: userError } = await supabase.auth.getUser(jwt)
+    if (userError || !userData?.user) return res.status(401).json({ error: 'Unauthorized' })
+    const userId = userData.user.id
+
+    // Ensure ownership via parent map
+    const { data: mapRow, error: mapErr } = await supabase
+      .from('maps')
+      .select('id,user_id')
+      .eq('id', req.params.id)
+      .single()
+    if (mapErr || !mapRow || mapRow.user_id !== userId) return res.status(404).json({ error: 'Not found' })
+
+    const versionNum = Number(req.params.version)
+    const { data, error } = await supabase
+      .from('map_versions')
+      .select('id,version,label,graph,layout,created_at')
+      .eq('map_id', req.params.id)
+      .eq('version', versionNum)
+      .maybeSingle()
+    if (error) return res.status(500).json({ error: error.message })
+    if (!data) return res.status(404).json({ error: 'Version not found' })
+    res.json({ version: data })
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? 'Unexpected error' })
+  }
+})
+
+// Restore a map to a specific version (copies graph/layout into maps)
+app.post('/api/maps/:id/versions/:version/restore', async (req, res) => {
+  try {
+    const authHeader = req.header('authorization')
+    const jwt = authHeader?.toLowerCase().startsWith('bearer ')
+      ? authHeader.slice(7).trim()
+      : null
+    if (!jwt || !supabase) return res.status(401).json({ error: 'Unauthorized' })
+    const { data: userData, error: userError } = await supabase.auth.getUser(jwt)
+    if (userError || !userData?.user) return res.status(401).json({ error: 'Unauthorized' })
+    const userId = userData.user.id
+
+    // Ensure ownership via parent map
+    const { data: mapRow, error: mapErr } = await supabase
+      .from('maps')
+      .select('id,user_id')
+      .eq('id', req.params.id)
+      .single()
+    if (mapErr || !mapRow || mapRow.user_id !== userId) return res.status(404).json({ error: 'Not found' })
+
+    const versionNum = Number(req.params.version)
+    const { data: versionRow, error: vErr } = await supabase
+      .from('map_versions')
+      .select('graph,layout')
+      .eq('map_id', req.params.id)
+      .eq('version', versionNum)
+      .maybeSingle()
+    if (vErr) return res.status(500).json({ error: vErr.message })
+    if (!versionRow) return res.status(404).json({ error: 'Version not found' })
+
+    const { error } = await supabase
+      .from('maps')
+      .update({ graph: versionRow.graph, layout: versionRow.layout })
+      .eq('id', req.params.id)
+      .eq('user_id', userId)
+    if (error) return res.status(500).json({ error: error.message })
+    res.json({ ok: true })
   } catch (e: any) {
     res.status(500).json({ error: e?.message ?? 'Unexpected error' })
   }

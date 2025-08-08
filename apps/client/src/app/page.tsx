@@ -1,179 +1,126 @@
-"use client"
+import Link from "next/link"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { generateMap, getHealth, API_BASE_URL } from "../lib/api"
-import { saveMap } from "../lib/api"
-import { listMaps } from "../lib/api"
-import dynamic from "next/dynamic"
-import { supabase } from "../lib/supabase"
-const MapCanvas = dynamic(() => import("../components/MapCanvas"), { ssr: false })
-const AuthGate = dynamic(() => import("../components/AuthGate"), { ssr: false })
-
-export default function Home() {
-  const router = useRouter()
-  const [health, setHealth] = useState<string>("")
-  const [input, setInput] = useState<string>("")
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-  const [result, setResult] = useState<{ summary: string; nodes: number; edges: number; map?: { nodes: Array<{ id: string; label: string; position?: { x: number; y: number } }>; edges: Array<{ id: string; source: string; target: string; label?: string }> } } | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string>("")
-  const [myMaps, setMyMaps] = useState<Array<{ id: string; title: string; created_at: string }>>([])
-
-  useEffect(() => {
-    let cancelled = false
-    const handleFetchHealth = async () => {
-      try {
-        const h = await getHealth()
-        if (cancelled) return
-        setHealth(`${h.status} (uptime: ${Math.floor(h.uptime)}s) — ${API_BASE_URL}`)
-      } catch {
-        if (cancelled) return
-        setHealth(`unreachable — ${API_BASE_URL}`)
-      }
-    }
-    handleFetchHealth()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let active = true
-    const checkOnboarding = async () => {
-      const session = (await supabase?.auth.getSession())?.data.session
-      if (!active || !session) return
-      const { data: profile } = await supabase!
-        .from("users")
-        .select("onboarded")
-        .eq("id", session.user.id)
-        .maybeSingle()
-      if (!active) return
-      if (profile && profile.onboarded === false) {
-        router.replace("/onboarding")
-      }
-    }
-    checkOnboarding()
-    return () => { active = false }
-  }, [router])
-
-  const handleLoadMaps = async () => {
-    try {
-      const maps = await listMaps()
-      setMyMaps(maps)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load maps')
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError("")
-    if (!input.trim()) {
-      setError("Please enter some text to generate a map.")
-      return
-    }
-    setIsSubmitting(true)
-    try {
-      const data = await generateMap(input)
-      setResult({ summary: data.summary, nodes: data.map.nodes.length, edges: data.map.edges.length, map: data.map })
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to generate map")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
+export default function LandingPage() {
   return (
-    <div className="font-sans min-h-screen p-8 sm:p-12 bg-background text-foreground">
-      <main className="mx-auto max-w-3xl space-y-8">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold">NeuroCanvas</h1>
-          <p className="text-sm text-black/60 dark:text-white/60">Server health: {health || "checking..."}</p>
-        </header>
+    <main className="space-y-16 relative">
+      {/* Landing background: light cream with gold dot grid */}
+      <div
+        aria-hidden
+        className="fixed inset-0 -z-10"
+        style={{
+          backgroundColor: '#fff8dc',
+          backgroundImage: 'radial-gradient(rgba(201,162,39,0.6) 1px, transparent 1px)',
+          backgroundSize: '36px 36px',
+          backgroundPosition: '0 0',
+        }}
+      />
+      {/* Hero */}
+      <section className="text-center space-y-6 text-slate-900">
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900">
+          Think better, together — with NeuroCanvas
+        </h1>
+        <p className="mx-auto max-w-3xl text-lg md:text-xl text-slate-700">
+          An AI-powered mind mapping workspace for creators, founders, and teams. Capture ideas, connect thoughts, and turn clarity into action.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <Link
+            href="/home"
+            className="inline-flex items-center gap-2 rounded-md px-5 py-3 font-semibold text-slate-900 bg-gradient-to-r from-yellow-400 to-amber-500 shadow hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-white/30"
+            aria-label="Go to mindmap home"
+          >
+            Start Mapping
+          </Link>
+          <Link
+            href="/signup"
+            className="inline-flex items-center gap-2 rounded-md px-5 py-3 font-semibold border border-white/20 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+            aria-label="Create an account"
+          >
+            Create Account
+          </Link>
+        </div>
+      </section>
 
-        <AuthGate>
-        <section aria-labelledby="generate-heading" className="space-y-4">
-          <h2 id="generate-heading" className="text-lg font-medium">Generate a mind map</h2>
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <label htmlFor="thoughts" className="block text-sm font-medium">Your thoughts</label>
-            <textarea
-              id="thoughts"
-              name="thoughts"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              rows={5}
-              className="w-full rounded-md border border-black/10 dark:border-white/15 bg-transparent p-3 outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/25"
-              placeholder="Write anything..."
-              aria-describedby="help-text"
-            />
-            <p id="help-text" className="text-xs text-black/60 dark:text-white/60">We will parse this into a simple map (mocked for now).</p>
-            <div className="flex items-center gap-3">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center rounded-md bg-black text-white px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-black"
-              >
-                {isSubmitting ? "Generating..." : "Generate"}
-              </button>
-              {error ? <span role="alert" className="text-sm text-red-600">{error}</span> : null}
-            </div>
-          </form>
-        </section>
+      {/* Who we are */}
+      <section className="grid md:grid-cols-3 gap-6 items-stretch">
+        <div className="md:col-span-2 rounded-xl border border-black/10 bg-white/70 backdrop-blur p-6 space-y-4">
+          <h2 className="text-2xl font-bold text-slate-900">Who we are</h2>
+          <p className="text-slate-800">
+            We are <span className="font-semibold">Algerian Developers</span> — a builder-first team crafting tools that amplify human thinking. Our mission is to help people organize complex thoughts and move from ideation to execution with clarity.
+          </p>
+          <p className="text-slate-700">
+            NeuroCanvas is born from the belief that ideas deserve structure, and collaboration should feel effortless.
+          </p>
+        </div>
+        <div className="rounded-xl border border-black/10 bg-white/70 backdrop-blur p-6">
+          <h3 className="text-lg font-semibold text-slate-900">Leadership</h3>
+          <p className="mt-2 text-slate-800">
+            <span className="font-semibold">Azeddine Zellag</span>, CEO
+          </p>
+          <p className="mt-1 text-sm text-slate-700">
+            Founder and product lead focused on delivering pragmatic AI tools that make deep work easier and faster.
+          </p>
+        </div>
+      </section>
 
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium">My maps</h2>
-            <button onClick={handleLoadMaps} className="rounded-md border px-3 py-1.5 text-sm border-black/10 dark:border-white/15">Refresh</button>
-          </div>
-          <ul className="space-y-2">
-            {myMaps.map((m) => (
-              <li key={m.id} className="text-sm opacity-80">{m.title} — <span className="opacity-60">{new Date(m.created_at).toLocaleString()}</span></li>
-            ))}
-            {myMaps.length === 0 && <li className="text-sm opacity-60">No maps yet.</li>}
-          </ul>
-        </section>
+      {/* What is the SaaS */}
+      <section className="rounded-xl border border-black/10 bg-white/70 backdrop-blur p-6 space-y-4">
+        <h2 className="text-2xl font-bold text-slate-900">What is NeuroCanvas?</h2>
+        <p className="text-slate-800">
+          NeuroCanvas is a Software-as-a-Service mind mapping platform that combines AI drafting with a powerful visual canvas. Start with a prompt, voice, or template — then refine your map with nodes, relationships, and actions.
+        </p>
+        <ul className="grid md:grid-cols-3 gap-3 text-sm text-slate-800">
+          <li className="rounded-lg border border-black/10 bg-white/70 p-4">
+            <span className="block font-semibold">AI brainstorming</span>
+            Generate structured ideas, themes, and action items from text or voice.
+          </li>
+          <li className="rounded-lg border border-black/10 bg-white/70 p-4">
+            <span className="block font-semibold">Collaborative canvas</span>
+            Map thoughts visually, keep versions, and share securely.
+          </li>
+          <li className="rounded-lg border border-black/10 bg-white/70 p-4">
+            <span className="block font-semibold">From clarity to execution</span>
+            Turn insights into plans with priorities, emotions, and connections.
+          </li>
+        </ul>
+      </section>
 
-        {result ? (
-          <section aria-live="polite" className="space-y-2 border-t pt-6 border-black/10 dark:border-white/10">
-            <h3 className="text-base font-semibold">Result</h3>
-            <p className="text-sm">{result.summary}</p>
-            <p className="text-sm text-black/60 dark:text-white/60">Nodes: {result.nodes} · Edges: {result.edges}</p>
-            {result.map ? (
-              <div className="pt-2">
-                <MapCanvas
-                  nodes={result.map.nodes}
-                  edges={result.map.edges}
-                  readOnly={false}
-                  enableToolbar
-                  onChange={(next) => setResult((r) => (r ? { ...r, map: next } : r))}
-                />
-              </div>
-            ) : null}
-            <div className="pt-2">
-              <button
-                className="rounded-md bg-black text-white px-3 py-1.5 text-sm dark:bg-white dark:text-black disabled:opacity-50"
-                disabled={saving || !result.map}
-                onClick={async () => {
-                  if (!result?.map) return
-                  setSaving(true)
-                  setError('')
-                  try {
-                    await saveMap({ title: 'Generated Map', graph: result.map })
-                  } catch (e: unknown) {
-                    setError(e instanceof Error ? e.message : 'Failed to save map')
-                  } finally {
-                    setSaving(false)
-                  }
-                }}
-              >
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-            </div>
-          </section>
-        ) : null}
-        </AuthGate>
-      </main>
-    </div>
+      {/* What we do and aim */}
+      <section className="grid md:grid-cols-2 gap-6">
+        <div className="rounded-xl border border-black/10 bg-white/70 backdrop-blur p-6 space-y-3">
+          <h2 className="text-2xl font-bold text-slate-900">What we do</h2>
+          <p className="text-slate-800">
+            We help individuals and teams externalize their thinking, discover patterns, and align on decisions. From product strategy to research, NeuroCanvas is your second brain for complex work.
+          </p>
+        </div>
+        <div className="rounded-xl border border-black/10 bg-white/70 backdrop-blur p-6 space-y-3">
+          <h2 className="text-2xl font-bold text-slate-900">What we aim to achieve</h2>
+          <p className="text-slate-800">
+            Our goal is to build the most intuitive thinking environment — one that respects privacy, enhances focus, and unlocks creative momentum.
+          </p>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="text-center space-y-4 text-slate-900">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Ready to think in maps?</h2>
+        <p className="text-slate-700">Jump into your workspace and start mapping in seconds.</p>
+        <div className="flex items-center justify-center gap-3">
+          <Link
+            href="/home"
+            className="inline-flex items-center gap-2 rounded-md px-5 py-3 font-semibold text-slate-900 bg-gradient-to-r from-yellow-400 to-amber-500 shadow hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-white/30"
+            aria-label="Go to mindmap home"
+          >
+            Go to Home
+          </Link>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 rounded-md px-5 py-3 font-semibold border border-white/20 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+            aria-label="Login"
+          >
+            Login
+          </Link>
+        </div>
+      </section>
+    </main>
   )
 }
