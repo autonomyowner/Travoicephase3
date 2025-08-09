@@ -47,11 +47,11 @@ export default function Header() {
     <div className="w-full rounded-none md:rounded-lg border-b md:border md:border-white/15 bg-white/5 backdrop-blur">
       <div className="flex items-center gap-3 px-3 py-2">
         {/* Left: Logo */}
-        <Link
-          href="/"
-          className="shrink-0 text-lg font-semibold select-none bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900"
-          aria-label="NeuroCanvas Home"
-        >
+          <Link
+            href="/"
+            className="shrink-0 text-lg font-semibold select-none bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900"
+            aria-label="NeuroCanvas Home"
+          >
           NeuroCanvas
         </Link>
 
@@ -59,6 +59,7 @@ export default function Header() {
         <div className="hidden md:flex items-center gap-2 ml-2">
           <Link href="/home" className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">Home</Link>
           <Link href="/pricing" className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">Pricing</Link>
+          <Link href="/vision" className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">Vision</Link>
           <div className="relative">
             <button onClick={() => setMenuOpen((v) => !v)} className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">Maps</button>
             {menuOpen ? (

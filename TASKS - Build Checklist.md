@@ -197,3 +197,8 @@
 - [ ] Post-launch
   - [ ] NPS, activation/retention KPIs tracking
   - [ ] Roadmap updates and backlog grooming
+
+
+
+
+Map diffs/timeline: Version playback, side‑by‑side diff, “restore as branch,” and changelog export.
