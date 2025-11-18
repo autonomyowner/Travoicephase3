@@ -53,13 +53,13 @@ export default function InvestorsPage() {
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">The Problem</h2>
         <div className="space-y-3 text-sm sm:text-base text-slate-800">
           <p className="text-base sm:text-lg font-semibold text-slate-900">
-            Real-time voice translation doesn't exist — and it's costing billions.
+            Real-time voice translation doesn&apos;t exist — and it&apos;s costing billions.
           </p>
           <ul className="space-y-2 ml-6 list-disc">
             <li>International business meetings require interpreters ($200-500/hour)</li>
             <li>Customer support teams need multilingual staff for every market</li>
             <li>Global conferences are limited by language tracks and subtitle delays</li>
-            <li>Telemedicine can't scale across language barriers</li>
+            <li>Telemedicine can&apos;t scale across language barriers</li>
             <li>Education remains siloed by geography and language</li>
           </ul>
           <div className="pt-2 border-t border-black/10 mt-4">
