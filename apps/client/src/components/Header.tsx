@@ -49,6 +49,9 @@ export default function Header() {
           <Link href={pathname?.startsWith('/ar') ? '/ar/rooms' : '/rooms'} className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
             {pathname?.startsWith('/ar') ? 'الغرف' : 'Rooms'}
           </Link>
+          <Link href={pathname?.startsWith('/ar') ? '/ar/investors' : '/investors'} className="px-2 py-1 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
+            {pathname?.startsWith('/ar') ? 'المستثمرون' : 'Investors'}
+          </Link>
 
         </div>
         <div className="ml-2 flex-1 hidden md:flex">
@@ -112,14 +115,21 @@ export default function Header() {
             >
               {pathname?.startsWith('/ar') ? 'الرؤية' : 'Vision'}
             </Link>
-            <Link 
-              href={pathname?.startsWith('/ar') ? '/ar/rooms' : '/rooms'} 
+            <Link
+              href={pathname?.startsWith('/ar') ? '/ar/rooms' : '/rooms'}
               className="px-3 py-2 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900"
               onClick={() => setMobileMenuOpen(false)}
             >
               {pathname?.startsWith('/ar') ? 'الغرف' : 'Rooms'}
             </Link>
-            
+            <Link
+              href={pathname?.startsWith('/ar') ? '/ar/investors' : '/investors'}
+              className="px-3 py-2 text-sm rounded hover:bg-white/10 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-red-900 to-slate-900"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {pathname?.startsWith('/ar') ? 'المستثمرون' : 'Investors'}
+            </Link>
+
 
             {/* Search in Mobile */}
             <div className="pt-2">
