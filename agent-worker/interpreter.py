@@ -3,7 +3,7 @@ LiveKit Live Interpreter Agent
 
 ===============================
 
-A real-time, two-way voice interpreter using DeepL for translation and ElevenLabs TTS.
+A real-time, two-way voice interpreter using Gemini Translate API for translation and ElevenLabs TTS.
 
 The agent is instructed by the application on which two languages to translate between.
 """
@@ -22,6 +22,7 @@ from livekit import agents
 from livekit.agents import APIConnectionError, APIStatusError, Agent, AgentSession
 from livekit.agents.tts import ChunkedStream, TTSCapabilities, TTS
 from livekit.plugins import deepgram, silero
+from google.cloud import translate_v2 as translate
 
 # Load environment variables
 load_dotenv(".env")
@@ -53,50 +54,41 @@ LANGUAGE_MAP = {
     "sv": "Swedish",
 }
 
-DEEPL_LANGUAGE_OVERRIDES = {
-    "en": "EN",
-    "en-us": "EN-US",
-    "en-gb": "EN-GB",
-    "fr": "FR",
-    "es": "ES",
-    "de": "DE",
-    "it": "IT",
-    "pt": "PT-PT",
-    "pt-pt": "PT-PT",
-    "pt-br": "PT-BR",
-    "ru": "RU",
-    "ja": "JA",
-    "zh": "ZH",
-    "zh-cn": "ZH",
-    "zh-tw": "ZH",
-    "ko": "KO",
-    "ar": "AR",
-    "hi": "HI",
-    "tr": "TR",
-    "nl": "NL",
-    "sv": "SV",
+GEMINI_LANGUAGE_CODES = {
+    "en": "en",
+    "es": "es",
+    "fr": "fr",
+    "de": "de",
+    "it": "it",
+    "pt": "pt",
+    "ru": "ru",
+    "ja": "ja",
+    "ko": "ko",
+    "zh": "zh-CN",
+    "zh-cn": "zh-CN",
+    "zh-tw": "zh-TW",
+    "ar": "ar",
+    "hi": "hi",
+    "tr": "tr",
+    "nl": "nl",
+    "sv": "sv",
 }
 
 
-def _to_deepl_code(code: str) -> Optional[str]:
+def _to_gemini_code(code: str) -> str:
+    """Convert language code to Gemini-compatible format."""
     if not code:
-        return None
+        return "en"
     normalized = code.strip().lower()
-    if normalized in DEEPL_LANGUAGE_OVERRIDES:
-        return DEEPL_LANGUAGE_OVERRIDES[normalized]
-    if len(normalized) == 2:
-        return normalized.upper()
-    if "-" in normalized:
-        parts = normalized.split("-")
-        return "-".join([parts[0].upper(), parts[1].upper()])
-    return normalized.upper()
+    return GEMINI_LANGUAGE_CODES.get(normalized, normalized)
 
 
 def _lang_matches(a: Optional[str], b: Optional[str]) -> bool:
+    """Check if two language codes match (case-insensitive, base language match)."""
     if not a or not b:
         return False
-    a_norm = a.upper()
-    b_norm = b.upper()
+    a_norm = a.lower()
+    b_norm = b.lower()
     if a_norm == b_norm:
         return True
     return a_norm.split("-")[0] == b_norm.split("-")[0]
@@ -108,8 +100,8 @@ class TranslationResult:
     detected_source_language: Optional[str]
 
 
-class DeepLTranslator:
-    """Minimal async DeepL client."""
+class GeminiTranslator:
+    """Gemini Translate API client for bidirectional translation."""
 
     def __init__(
         self,
@@ -117,53 +109,72 @@ class DeepLTranslator:
         api_key: str,
         lang1_code: str,
         lang2_code: str,
-        base_url: str,
-        timeout_seconds: float = 15.0,
     ) -> None:
+        """Initialize Gemini translator with API key and language pair.
+
+        Args:
+            api_key: Google Cloud API key for Translation API
+            lang1_code: First language code (e.g., 'en', 'ar')
+            lang2_code: Second language code (e.g., 'fr', 'es')
+        """
         self._api_key = api_key
         self._lang1_code = lang1_code.lower()
         self._lang2_code = lang2_code.lower()
-        self._lang1_deepl = _to_deepl_code(lang1_code)
-        self._lang2_deepl = _to_deepl_code(lang2_code)
-        if not self._lang1_deepl or not self._lang2_deepl:
-            raise ValueError(
-                f"Unsupported language mapping for DeepL (lang1={lang1_code}, lang2={lang2_code})"
-            )
-        self._base_url = base_url.rstrip("/")
-        self._timeout = httpx.Timeout(timeout_seconds)
+        self._lang1_gemini = _to_gemini_code(lang1_code)
+        self._lang2_gemini = _to_gemini_code(lang2_code)
         self._lock = asyncio.Lock()
 
+        # Initialize the Google Cloud Translation client with API key
+        os.environ["GOOGLE_API_KEY"] = api_key
+        self._client = translate.Client()
+
+        logger.info(f"Gemini Translator initialized: {self._lang1_gemini} <-> {self._lang2_gemini}")
+
     async def translate(self, text: str) -> Optional[str]:
+        """Translate text between the two configured languages.
+
+        Automatically detects source language and translates to the other language.
+
+        Args:
+            text: Text to translate
+
+        Returns:
+            Translated text or None if translation fails/unsupported language
+        """
         cleaned = text.strip()
         if not cleaned:
             return None
 
         async with self._lock:
+            # First attempt: translate to lang2
             first = await self._request(
                 text=cleaned,
-                target_lang=self._lang2_deepl,
+                target_lang=self._lang2_gemini,
             )
             if not first:
                 return None
 
             detected = first.detected_source_language
-            if _lang_matches(detected, self._lang1_deepl):
+
+            # If detected language matches lang1, return the translation to lang2
+            if _lang_matches(detected, self._lang1_gemini):
+                logger.info(f"Detected {detected} -> translating to {self._lang2_gemini}")
                 return first.text
 
-            if _lang_matches(detected, self._lang2_deepl):
+            # If detected language matches lang2, translate to lang1 instead
+            if _lang_matches(detected, self._lang2_gemini):
+                logger.info(f"Detected {detected} -> translating to {self._lang1_gemini}")
                 second = await self._request(
                     text=cleaned,
-                    target_lang=self._lang1_deepl,
+                    target_lang=self._lang1_gemini,
                 )
-                if second and _lang_matches(
-                    second.detected_source_language, self._lang2_deepl
-                ):
+                if second and _lang_matches(second.detected_source_language, self._lang2_gemini):
                     return second.text
                 return None
 
+            # Unsupported language detected
             logger.info(
-                "DeepL detected unsupported language '%s'; suppressing response",
-                detected,
+                f"Gemini detected unsupported language '{detected}' (expected {self._lang1_gemini} or {self._lang2_gemini}); suppressing response"
             )
             return None
 
@@ -173,43 +184,46 @@ class DeepLTranslator:
         text: str,
         target_lang: str,
     ) -> Optional[TranslationResult]:
-        headers = {"Authorization": f"DeepL-Auth-Key {self._api_key}"}
-        data = {
-            "text": text,
-            "target_lang": target_lang,
-            "preserve_formatting": "1",
-        }
+        """Make translation request to Gemini Translate API.
 
+        Args:
+            text: Text to translate
+            target_lang: Target language code
+
+        Returns:
+            TranslationResult with translated text and detected source language
+        """
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(
-                    self._base_url,
-                    data=data,
-                    headers=headers,
+            # Run blocking translate call in executor to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: self._client.translate(
+                    text,
+                    target_language=target_lang,
+                    format_="text"
                 )
-                response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            logger.error(
-                "DeepL translation failed with status %s: %s",
-                exc.response.status_code,
-                exc.response.text,
             )
-            return None
-        except httpx.RequestError as exc:
-            logger.error("DeepL translation request error: %s", exc)
-            return None
 
-        payload = response.json()
-        translations = payload.get("translations") or []
-        if not translations:
-            logger.warning("DeepL translation returned empty response")
-            return None
+            if not result:
+                logger.warning("Gemini translation returned empty response")
+                return None
 
-        first = translations[0]
-        return TranslationResult(
-            text=first.get("text", "").strip(),
-            detected_source_language=first.get("detected_source_language"),
-        )
+            translated_text = result.get("translatedText", "").strip()
+            detected_lang = result.get("detectedSourceLanguage", "").lower()
+
+            if not translated_text:
+                logger.warning("Gemini translation result has no text")
+                return None
+
+            return TranslationResult(
+                text=translated_text,
+                detected_source_language=detected_lang,
+            )
+
+        except Exception as exc:
+            logger.error(f"Gemini translation request error: {exc}")
+            return None
 
 
 class ElevenLabsChunkedStream(ChunkedStream):
@@ -366,7 +380,7 @@ class Interpreter(Agent):
         self,
         lang1_code: str,
         lang2_code: str,
-        translator: DeepLTranslator,
+        translator: GeminiTranslator,
     ):
         self.lang1_code = lang1_code.lower()
         self.lang2_code = lang2_code.lower()
@@ -443,14 +457,12 @@ async def entrypoint(ctx: agents.JobContext):
         logger.info(f"Starting interpreter agent for {lang1} <-> {lang2}")
 
         # Check and log environment variables
-        deepl_api_key = os.getenv("DEEPL_API_KEY")
-        if not deepl_api_key:
-            error_msg = "DEEPL_API_KEY environment variable is required"
+        gemini_api_key = os.getenv("GEMINI_API_KEY")
+        if not gemini_api_key:
+            error_msg = "GEMINI_API_KEY environment variable is required"
             logger.error(error_msg)
             raise ValueError(error_msg)
-        logger.info("DEEPL_API_KEY found")
-
-        deepl_api_url = os.getenv("DEEPL_API_URL", "https://api-free.deepl.com/v2/translate")
+        logger.info("GEMINI_API_KEY found")
 
         elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY")
         if not elevenlabs_api_key:
@@ -485,13 +497,12 @@ async def entrypoint(ctx: agents.JobContext):
         use_speaker_boost = os.getenv("ELEVENLABS_SPEAKER_BOOST", "true").lower() != "false"
 
         # Initialize translation and TTS services
-        translator = DeepLTranslator(
-            api_key=deepl_api_key,
+        translator = GeminiTranslator(
+            api_key=gemini_api_key,
             lang1_code=lang1,
             lang2_code=lang2,
-            base_url=deepl_api_url,
         )
-        logger.info("DeepL translator initialized")
+        logger.info("Gemini translator initialized")
 
         tts = ElevenLabsTTS(
             api_key=elevenlabs_api_key,
@@ -520,7 +531,7 @@ async def entrypoint(ctx: agents.JobContext):
         stt = deepgram.STT(model=stt_model, language=stt_language, api_key=deepgram_api_key)
         logger.info("Deepgram STT initialized successfully")
         logger.info("  - STT: Deepgram (nova-3, multi-language)")
-        logger.info("  - Translation: DeepL")
+        logger.info("  - Translation: Gemini Translate API")
         logger.info("  - TTS: ElevenLabs")
         logger.info("  - VAD: Silero")
         
