@@ -536,7 +536,7 @@ export default function BusinessPage() {
               <div
                 key={i}
                 className={`p-6 rounded-2xl relative ${
-                  phase.status === 'current' ? 'ring-2' : ''
+                  phase.status === 'current' ? 'ring-2 ring-[#68a67d]' : ''
                 }`}
                 style={{
                   background: phase.status === 'completed'
@@ -545,7 +545,6 @@ export default function BusinessPage() {
                     ? 'var(--bg-card)'
                     : 'var(--cream-100)',
                   border: '1px solid var(--border-soft)',
-                  ringColor: phase.status === 'current' ? 'var(--matcha-500)' : undefined,
                 }}
               >
                 {phase.status === 'current' && (
