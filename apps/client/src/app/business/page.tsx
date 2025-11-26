@@ -30,10 +30,10 @@ export default function BusinessPage() {
   ];
 
   const investmentTiers = [
-    { amount: '50K - 100K €', equity: '0.5% - 1%', perks: ['Accès early investor', 'Rapport mensuel', 'Badge fondateur'] },
-    { amount: '100K - 250K €', equity: '1% - 2.5%', perks: ['Tout précédent', 'Call trimestriel CEO', 'Advisory board invite'] },
-    { amount: '250K - 500K €', equity: '2.5% - 5%', perks: ['Tout précédent', 'Siège observateur board', 'Co-branding opportunités'] },
-    { amount: '500K+ €', equity: '5%+', perks: ['Tout précédent', 'Siège board', 'Droits de préemption', 'Due diligence complète'] },
+    { amount: '10K - 20K €', equity: '0.5% - 1%', perks: ['Accès early investor', 'Rapport mensuel', 'Badge fondateur'] },
+    { amount: '20K - 50K €', equity: '1% - 2.5%', perks: ['Tout précédent', 'Call trimestriel CEO', 'Advisory board invite'] },
+    { amount: '50K - 100K €', equity: '2.5% - 5%', perks: ['Tout précédent', 'Siège observateur board', 'Co-branding opportunités'] },
+    { amount: '100K+ €', equity: '5%+', perks: ['Tout précédent', 'Siège board', 'Droits de préemption', 'Due diligence complète'] },
   ];
 
   return (
@@ -486,10 +486,10 @@ export default function BusinessPage() {
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-white">
               {[
-                { year: '2024', revenue: '500K €', users: '50K' },
-                { year: '2025', revenue: '2M €', users: '200K' },
-                { year: '2026', revenue: '8M €', users: '800K' },
-                { year: '2027', revenue: '25M €', users: '2.5M' },
+                { year: '2026', revenue: '500K €', users: '50K' },
+                { year: '2027', revenue: '2M €', users: '200K' },
+                { year: '2028', revenue: '8M €', users: '800K' },
+                { year: '2029', revenue: '25M €', users: '2.5M' },
               ].map((item, i) => (
                 <div key={i}>
                   <p className="text-lg opacity-80 mb-1">{item.year}</p>
@@ -624,7 +624,7 @@ export default function BusinessPage() {
               className="text-xl max-w-3xl mx-auto"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Nous levons 1M € en seed pour accélérer notre croissance.
+              Nous levons 200K € en seed pour accélérer notre croissance.
               Plusieurs tiers d&apos;investissement disponibles.
             </p>
           </div>
