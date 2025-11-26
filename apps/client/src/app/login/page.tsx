@@ -1,137 +1,185 @@
-"use client"
+'use client';
 
-import { Suspense, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { supabase, supabaseConfigured } from "../../lib/supabase"
-
-function LoginBody() {
-  const router = useRouter()
-  const params = useSearchParams()
-  const [email, setEmail] = useState("")
-  const [status, setStatus] = useState<string>("")
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let mounted = true
-    const init = async () => {
-      const res = await supabase?.auth.getSession()
-      const data = res?.data
-      if (!mounted) return
-      if (data?.session) {
-        const redirect = params.get("redirect") || "/"
-        router.replace(redirect)
-        return
-      }
-      setLoading(false)
-    }
-    init()
-    return () => { mounted = false }
-  }, [params, router])
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!supabase) return
-    setStatus("Sending magic link…")
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
-    })
-    setStatus(error ? `Error: ${error.message}` : "Check your email for a magic link.")
-  }
-
-  const handleOAuth = async (provider: "google" | "github") => {
-    if (!supabase) return
-    setStatus(`Redirecting to ${provider}…`)
-    const { error } = await supabase.auth.signInWithOAuth({ provider })
-    if (error) setStatus(`Error: ${error.message}`)
-  }
-
-  if (!supabaseConfigured) {
-    return (
-      <div className="p-6 text-sm text-red-600">Supabase is not configured. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.</div>
-    )
-  }
-
-  if (loading) return <div className="p-6 text-sm opacity-70">Checking session…</div>
-
-  return (
-    <main className="relative">
-      <div
-        aria-hidden
-        className="fixed inset-0 -z-10"
-        style={{
-          backgroundColor: '#fff8dc',
-          backgroundImage: 'radial-gradient(rgba(201,162,39,0.6) 1px, transparent 1px)',
-          backgroundSize: '36px 36px',
-          backgroundPosition: '0 0',
-        }}
-      />
-      <section className="max-w-md mx-auto space-y-6">
-        <div className="text-center space-y-2 text-slate-900">
-          <h1 className="text-3xl font-extrabold tracking-tight">Welcome back</h1>
-          <p className="text-slate-700 text-sm">Log in with a magic link or continue with your favorite provider.</p>
-        </div>
-
-        <div className="rounded-xl border border-black/10 bg-white/70 backdrop-blur p-6 text-slate-900">
-          <form onSubmit={handleEmailLogin} className="space-y-3">
-            <label htmlFor="email" className="block text-sm font-medium">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full rounded-md border border-black/20 bg-white/70 p-2 outline-none focus:ring-2 focus:ring-amber-400/50"
-              required
-            />
-            <button
-              aria-label="Send magic link to email"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 font-semibold text-slate-900 bg-gradient-to-r from-yellow-400 to-amber-500 shadow hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-white/30"
-            >
-              Send magic link
-            </button>
-          </form>
-
-          <div className="my-4 flex items-center gap-3 text-slate-600">
-            <div className="h-px flex-1 bg-black/10" />
-            <span className="text-xs">or</span>
-            <div className="h-px flex-1 bg-black/10" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleOAuth("google")}
-              aria-label="Continue with Google"
-              className="rounded-md border border-black/15 bg-white/60 px-3 py-2 text-sm hover:bg-white/80"
-            >
-              Google
-            </button>
-            <button
-              onClick={() => handleOAuth("github")}
-              aria-label="Continue with GitHub"
-              className="rounded-md border border-black/15 bg-white/60 px-3 py-2 text-sm hover:bg-white/80"
-            >
-              GitHub
-            </button>
-          </div>
-
-          {status && <p className="mt-3 text-sm text-slate-700" role="status">{status}</p>}
-        </div>
-
-        <p className="text-center text-sm text-slate-800">
-          New here? <a href="/signup" className="underline underline-offset-4">Create an account</a>
-        </p>
-      </section>
-    </main>
-  )
-}
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuthContext } from '../../components/AuthProvider';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuthContext();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      router.replace('/tableau-de-bord');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await login(email, password);
+      router.push('/tableau-de-bord');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--cream-50)' }}
+      >
+        <p style={{ color: 'var(--text-secondary)' }}>Chargement...</p>
+      </div>
+    );
+  }
+
   return (
-    <Suspense fallback={<div className="p-6 text-sm opacity-70">Loading…</div>}>
-      <LoginBody />
-    </Suspense>
-  )
+    <div className="min-h-screen" style={{ background: 'var(--cream-50)' }}>
+      {/* Decorative Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute top-0 right-0 w-[400px] h-[400px] opacity-20"
+          style={{
+            background:
+              'radial-gradient(circle, var(--matcha-200) 0%, transparent 70%)',
+            borderRadius: '50%',
+            transform: 'translate(20%, -30%)',
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-0 w-[300px] h-[300px] opacity-15"
+          style={{
+            background:
+              'radial-gradient(circle, var(--terra-300) 0%, transparent 70%)',
+            borderRadius: '50%',
+            transform: 'translate(-20%, 30%)',
+          }}
+        />
+      </div>
+
+      <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <Link
+              href="/"
+              className="inline-block text-2xl font-semibold mb-6"
+              style={{
+                fontFamily: 'var(--font-dm-serif), Georgia, serif',
+                color: 'var(--matcha-600)',
+              }}
+            >
+              Matcha
+            </Link>
+            <h1
+              className="text-3xl mb-2"
+              style={{
+                fontFamily: 'var(--font-dm-serif), Georgia, serif',
+                color: 'var(--text-primary)',
+              }}
+            >
+              Bon retour parmi nous
+            </h1>
+            <p style={{ color: 'var(--text-secondary)' }}>
+              Connectez-vous pour accéder à votre espace
+            </p>
+          </div>
+
+          {/* Login Form */}
+          <div
+            className="rounded-3xl p-8"
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-soft)',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+          >
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <Input
+                label="Adresse email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="vous@exemple.com"
+                required
+                autoComplete="email"
+              />
+
+              <Input
+                label="Mot de passe"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Votre mot de passe"
+                required
+                autoComplete="current-password"
+              />
+
+              {error && (
+                <div
+                  className="p-3 rounded-lg text-sm"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#dc2626',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                fullWidth
+                isLoading={isLoading}
+                size="lg"
+              >
+                Se connecter
+              </Button>
+            </form>
+
+            <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--border-soft)' }}>
+              <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Pas encore de compte ?{' '}
+                <Link
+                  href="/signup"
+                  className="font-medium hover:underline"
+                  style={{ color: 'var(--matcha-600)' }}
+                >
+                  Créer un compte
+                </Link>
+              </p>
+            </div>
+          </div>
+
+          {/* Demo credentials hint */}
+          <div
+            className="mt-6 p-4 rounded-2xl text-center"
+            style={{
+              background: 'var(--matcha-100)',
+              border: '1px solid var(--matcha-200)',
+            }}
+          >
+            <p className="text-sm" style={{ color: 'var(--matcha-700)' }}>
+              <strong>Mode démo :</strong> Créez un compte avec n&apos;importe quel email pour tester l&apos;application.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
-
-

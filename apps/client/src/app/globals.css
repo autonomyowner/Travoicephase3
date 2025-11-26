@@ -1,43 +1,292 @@
 @import "tailwindcss";
 
+/* Matcha Design System - Warm & Human Aesthetic */
 :root {
-  --background: #0b0f1a;
-  --foreground: #e6e8ee;
-  --nc-accent-1: #8b5cf6; /* purple */
-  --nc-accent-2: #22d3ee; /* cyan */
-  --nc-surface: rgba(255, 255, 255, 0.06);
-  --nc-border: rgba(255, 255, 255, 0.12);
+  /* Primary - Matcha Green (warm, natural) */
+  --matcha-50: #f0fdf4;
+  --matcha-100: #dcfce7;
+  --matcha-200: #bbf7d0;
+  --matcha-300: #86efac;
+  --matcha-400: #4ade80;
+  --matcha-500: #68a67d;
+  --matcha-600: #5a9470;
+  --matcha-700: #4a7c5d;
+  --matcha-800: #3d6b4e;
+  --matcha-900: #2d5039;
+
+  /* Warm Neutrals - Cream tones */
+  --cream-50: #fefdfb;
+  --cream-100: #fdf8f3;
+  --cream-200: #f5ebe0;
+  --cream-300: #e8dcc8;
+  --cream-400: #d4c4a8;
+  --cream-500: #c4b08a;
+
+  /* Accent - Terracotta (warmth) */
+  --terra-300: #f5a572;
+  --terra-400: #e07b4c;
+  --terra-500: #c45d2c;
+  --terra-600: #a34a22;
+
+  /* Text colors */
+  --text-primary: #2d3a2e;
+  --text-secondary: #5a6b5c;
+  --text-muted: #8a9a8c;
+  --text-inverse: #fefdfb;
+
+  /* Backgrounds */
+  --bg-page: #fefdfb;
+  --bg-card: #ffffff;
+  --bg-elevated: #f8f6f2;
+  --bg-muted: #f5ebe0;
+
+  /* Borders */
+  --border-soft: rgba(104, 166, 125, 0.15);
+  --border-medium: rgba(104, 166, 125, 0.25);
+  --border-strong: rgba(104, 166, 125, 0.4);
+
+  /* Shadows - Soft and diffused */
+  --shadow-sm: 0 2px 8px rgba(45, 58, 46, 0.06);
+  --shadow-md: 0 4px 16px rgba(45, 58, 46, 0.08);
+  --shadow-lg: 0 8px 32px rgba(45, 58, 46, 0.12);
+  --shadow-xl: 0 16px 48px rgba(45, 58, 46, 0.16);
+
+  /* Border radius - Organic, rounded */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg-page);
+  --color-foreground: var(--text-primary);
+  --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+  --font-serif: "DM Serif Display", Georgia, serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #070b16;
-    --foreground: #e6e8ee;
-  }
+/* Base styles */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  /* Allow Tailwind gradient classes on <body> to control the site background */
-  background: transparent;
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* React Flow base overrides for dark mode borders */
-.react-flow__node-default {
-  color: inherit;
+/* Typography utilities */
+.font-serif {
+  font-family: "DM Serif Display", Georgia, serif;
 }
 
-/* Subtle glass card surfaces */
-.nc-surface {
-  background: var(--nc-surface);
-  border: 1px solid var(--nc-border);
-  backdrop-filter: saturate(140%) blur(8px);
+.text-gradient {
+  background: linear-gradient(135deg, var(--matcha-600) 0%, var(--matcha-500) 50%, var(--terra-400) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
+
+/* Card surfaces */
+.matcha-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.matcha-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Button base styles */
+.matcha-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.matcha-btn-primary {
+  background: linear-gradient(135deg, var(--matcha-500) 0%, var(--matcha-600) 100%);
+  color: var(--text-inverse);
+  box-shadow: 0 4px 14px rgba(104, 166, 125, 0.35);
+}
+
+.matcha-btn-primary:hover {
+  background: linear-gradient(135deg, var(--matcha-600) 0%, var(--matcha-700) 100%);
+  box-shadow: 0 6px 20px rgba(104, 166, 125, 0.45);
+  transform: translateY(-1px);
+}
+
+.matcha-btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+}
+
+.matcha-btn-secondary:hover {
+  background: var(--bg-elevated);
+  border-color: var(--matcha-500);
+}
+
+/* Input styles */
+.matcha-input {
+  width: 100%;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  color: var(--text-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.matcha-input:focus {
+  outline: none;
+  border-color: var(--matcha-500);
+  box-shadow: 0 0 0 3px rgba(104, 166, 125, 0.15);
+}
+
+.matcha-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Label styles */
+.matcha-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Link styles */
+.matcha-link {
+  color: var(--matcha-600);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.matcha-link:hover {
+  color: var(--matcha-700);
+  text-decoration: underline;
+}
+
+/* Section backgrounds */
+.bg-warm-gradient {
+  background: linear-gradient(180deg, var(--cream-50) 0%, var(--cream-100) 50%, var(--cream-200) 100%);
+}
+
+.bg-matcha-soft {
+  background: linear-gradient(135deg, rgba(104, 166, 125, 0.05) 0%, rgba(104, 166, 125, 0.1) 100%);
+}
+
+/* Organic blob shapes for decorative elements */
+.blob-shape {
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+}
+
+/* Progress bar */
+.matcha-progress {
+  height: 8px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.matcha-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--matcha-500) 0%, var(--matcha-400) 100%);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+/* Badge styles */
+.matcha-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.matcha-badge-pro {
+  background: linear-gradient(135deg, var(--terra-400) 0%, var(--terra-500) 100%);
+  color: var(--text-inverse);
+}
+
+.matcha-badge-free {
+  background: var(--matcha-100);
+  color: var(--matcha-700);
+}
+
+/* Blur overlay for locked content */
+.locked-blur {
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Stagger children animations */
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.6s; }

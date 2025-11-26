@@ -1,22 +1,40 @@
 import type { Metadata } from "next";
+import { DM_Sans, DM_Serif_Display } from "next/font/google";
 import Header from "../components/Header";
-import ConditionalGlobalBoard from "../components/ConditionalGlobalBoard";
-import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "../components/AuthProvider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const dmSerif = DM_Serif_Display({
+  variable: "--font-dm-serif",
   subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
-  title: "NeuroCanvas",
-  description: "AI-powered thought mapping",
+  title: "Matcha - Comprenez votre esprit",
+  description:
+    "L'IA qui décode vos schémas de pensée, identifie vos biais cognitifs, et vous aide à comprendre la racine de vos défis.",
+  keywords: [
+    "psychologie",
+    "IA",
+    "biais cognitifs",
+    "développement personnel",
+    "analyse psychologique",
+  ],
+  authors: [{ name: "Matcha" }],
+  openGraph: {
+    title: "Matcha - Comprenez votre esprit",
+    description:
+      "L'IA qui décode vos schémas de pensée et vous aide à surmonter vos blocages.",
+    type: "website",
+    locale: "fr_FR",
+  },
 };
 
 export default function RootLayout({
@@ -25,15 +43,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-slate-900 via-yellow-600 to-slate-900 text-white min-h-screen`}> 
-        <ConditionalGlobalBoard />
-        <div className="sticky top-0 z-50">
-          <Header />
-        </div>
-        <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
-          {children}
-        </div>
+    <html lang="fr">
+      <body
+        className={`${dmSans.variable} ${dmSerif.variable} antialiased min-h-screen`}
+        style={{
+          background: "var(--bg-page)",
+          color: "var(--text-primary)",
+          fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
+        }}
+      >
+        <AuthProvider>
+          <div className="sticky top-0 z-50">
+            <Header />
+          </div>
+          <main>{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
