@@ -96,7 +96,7 @@ export default function LandingPage() {
 
           {/* CTA Buttons */}
           <div
-            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-20 transition-all duration-700 delay-300 ${
+            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 transition-all duration-700 delay-300 ${
               mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
@@ -111,6 +111,26 @@ export default function LandingPage() {
               className="matcha-btn matcha-btn-secondary text-base px-8 py-4"
             >
               Découvrir comment ça marche
+            </Link>
+          </div>
+
+          {/* Business CTA */}
+          <div
+            className={`flex justify-center mb-20 transition-all duration-700 delay-500 ${
+              mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+          >
+            <Link
+              href="/business"
+              className="group relative inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-full transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, var(--terra-400) 0%, var(--terra-500) 100%)',
+                color: 'white',
+                boxShadow: '0 4px 14px rgba(198, 134, 103, 0.4)',
+              }}
+            >
+              <span className="relative">Business Machi Bricol</span>
+              <span className="relative">→</span>
             </Link>
           </div>
 
