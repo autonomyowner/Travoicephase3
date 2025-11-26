@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import InteractiveDemo from '@/components/InteractiveDemo';
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
@@ -326,6 +327,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Interactive Demo Section */}
+      <InteractiveDemo />
 
       {/* Features Section */}
       <section
