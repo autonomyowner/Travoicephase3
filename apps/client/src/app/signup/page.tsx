@@ -95,7 +95,7 @@ function SignupForm() {
                 color: 'var(--matcha-600)',
               }}
             >
-              Matcha
+              TRAVoices
             </Link>
             <h1
               className="text-3xl mb-2"
