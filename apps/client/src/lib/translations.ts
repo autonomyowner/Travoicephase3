@@ -74,6 +74,9 @@ export const translations = {
       // Footer
       footerTagline: 'The AI that understands your mind',
       allRightsReserved: 'All rights reserved.',
+      investorCta: 'Become a Co-Founder',
+      investorMsg: 'Looking for a $20K investment for 20% equity to scale Matcha worldwide.',
+      investorContact: 'Get in touch',
     },
 
     // Interactive Demo
@@ -391,6 +394,9 @@ export const translations = {
       // Footer
       footerTagline: "L'IA qui comprend votre esprit",
       allRightsReserved: 'Tous droits reserves.',
+      investorCta: 'Devenez Co-Fondateur',
+      investorMsg: 'Recherche investissement de 20K$ pour 20% des parts afin de deployer Matcha mondialement.',
+      investorContact: 'Nous contacter',
     },
 
     // Interactive Demo
