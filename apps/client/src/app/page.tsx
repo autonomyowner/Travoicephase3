@@ -114,94 +114,297 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Hero Visual - Abstract Brain Pattern */}
+          {/* Hero Visual - Voice Communication */}
           <div
-            className={`relative max-w-3xl mx-auto transition-all duration-1000 delay-500 ${
+            className={`relative max-w-5xl mx-auto transition-all duration-1000 delay-500 ${
               mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
             }`}
           >
             <div
-              className="relative rounded-3xl overflow-hidden"
+              className="relative rounded-2xl md:rounded-3xl overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, var(--cream-100) 0%, var(--cream-200) 100%)',
-                border: '1px solid var(--border-soft)',
-                boxShadow: 'var(--shadow-xl)',
-                aspectRatio: '16/9',
+                background: 'radial-gradient(ellipse at top, #1a2332 0%, #0d1219 100%)',
+                border: '1px solid rgba(104, 166, 125, 0.15)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+                minHeight: '400px',
               }}
             >
-              {/* Abstract visualization representing mind analysis */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-full h-full">
-                  {/* Central element */}
-                  <div
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--matcha-400) 0%, var(--matcha-600) 100%)',
-                      boxShadow: '0 0 60px rgba(104, 166, 125, 0.4)',
-                    }}
-                  />
-                  {/* Orbiting elements */}
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
+              {/* Animated gradient orbs in background */}
+              <div
+                className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-3xl opacity-20"
+                style={{
+                  background: 'radial-gradient(circle, var(--matcha-400) 0%, transparent 70%)',
+                  animation: 'float-slow 8s ease-in-out infinite',
+                }}
+              />
+              <div
+                className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-3xl opacity-20"
+                style={{
+                  background: 'radial-gradient(circle, var(--terra-400) 0%, transparent 70%)',
+                  animation: 'float-slow 10s ease-in-out infinite reverse',
+                }}
+              />
+
+              {/* Main Content - Responsive Layout */}
+              <div className="relative h-full min-h-[400px] flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 p-8 md:p-12">
+
+                {/* Left Voice Orb - English */}
+                <div className="relative flex flex-col items-center gap-3 z-10">
+                  <div className="relative group">
+                    {/* Main orb */}
                     <div
-                      key={i}
-                      className="absolute top-1/2 left-1/2"
+                      className="w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center relative"
                       style={{
-                        width: `${180 + i * 60}px`,
-                        height: `${180 + i * 60}px`,
-                        marginLeft: `-${(180 + i * 60) / 2}px`,
-                        marginTop: `-${(180 + i * 60) / 2}px`,
-                        border: `1px solid rgba(104, 166, 125, ${0.3 - i * 0.04})`,
-                        borderRadius: '50%',
-                        animation: `spin ${20 + i * 5}s linear infinite ${i % 2 === 0 ? '' : 'reverse'}`,
+                        background: 'linear-gradient(135deg, var(--matcha-400) 0%, var(--matcha-600) 100%)',
+                        boxShadow: '0 0 60px rgba(104, 166, 125, 0.5), inset 0 2px 10px rgba(255, 255, 255, 0.2)',
                       }}
                     >
+                      {/* Microphone icon */}
+                      <svg className="w-10 h-10 md:w-12 md:h-12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="22" />
+                      </svg>
+
+                      {/* Inner glow */}
                       <div
-                        className="absolute w-3 h-3 rounded-full"
+                        className="absolute inset-3 rounded-full"
                         style={{
-                          background: i % 2 === 0 ? 'var(--matcha-500)' : 'var(--terra-400)',
-                          top: '0',
-                          left: '50%',
-                          marginLeft: '-6px',
-                          marginTop: '-6px',
+                          background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
+                          animation: 'pulse-glow 2s ease-in-out infinite',
                         }}
                       />
                     </div>
-                  ))}
-                  {/* Floating labels */}
-                  <div
-                    className="absolute top-1/4 left-1/4 px-3 py-1.5 rounded-full text-xs font-medium"
-                    style={{
-                      background: 'var(--bg-card)',
-                      color: 'var(--matcha-700)',
-                      boxShadow: 'var(--shadow-md)',
-                      animation: 'float 4s ease-in-out infinite',
-                    }}
-                  >
-                    {t.landing.cognitiveBiases}
+
+                    {/* Pulse rings */}
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="absolute inset-0 rounded-full border-2"
+                        style={{
+                          borderColor: 'rgba(104, 166, 125, 0.4)',
+                          animation: `pulse-ring ${2.5 + i * 0.5}s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
+                          animationDelay: `${i * 0.4}s`,
+                        }}
+                      />
+                    ))}
                   </div>
+
+                  {/* Language badge */}
                   <div
-                    className="absolute top-1/3 right-1/4 px-3 py-1.5 rounded-full text-xs font-medium"
+                    className="px-4 py-1.5 rounded-full backdrop-blur-sm"
                     style={{
-                      background: 'var(--bg-card)',
-                      color: 'var(--terra-500)',
-                      boxShadow: 'var(--shadow-md)',
-                      animation: 'float 5s ease-in-out infinite 1s',
+                      background: 'rgba(104, 166, 125, 0.15)',
+                      border: '1px solid rgba(104, 166, 125, 0.3)',
                     }}
                   >
-                    {t.landing.thoughtPatterns}
+                    <span className="text-xs md:text-sm font-bold tracking-wider" style={{ color: 'var(--matcha-300)' }}>
+                      EN
+                    </span>
                   </div>
-                  <div
-                    className="absolute bottom-1/3 left-1/3 px-3 py-1.5 rounded-full text-xs font-medium"
-                    style={{
-                      background: 'var(--bg-card)',
-                      color: 'var(--matcha-600)',
-                      boxShadow: 'var(--shadow-md)',
-                      animation: 'float 4.5s ease-in-out infinite 0.5s',
-                    }}
-                  >
-                    {t.demo.analysisTitle}
+
+                  {/* Audio waves */}
+                  <div className="flex items-end gap-1 h-16 md:h-20">
+                    {[4, 7, 5, 9, 6, 8, 5, 7].map((height, i) => (
+                      <div
+                        key={i}
+                        className="w-1 md:w-1.5 rounded-full"
+                        style={{
+                          height: `${height * 6}px`,
+                          background: 'linear-gradient(to top, var(--matcha-600), var(--matcha-300))',
+                          animation: `audio-wave ${0.6 + i * 0.08}s ease-in-out infinite alternate`,
+                          animationDelay: `${i * 0.08}s`,
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
+
+                {/* Center - Live Translation Flow */}
+                <div className="flex flex-col items-center justify-center gap-4 md:gap-6 flex-1 max-w-md">
+
+                  {/* Translation stream */}
+                  <div className="relative w-full">
+                    {/* Flowing connection line */}
+                    <div className="relative h-0.5 w-full rounded-full overflow-hidden">
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background: 'linear-gradient(90deg, transparent 0%, var(--matcha-500) 20%, var(--terra-400) 50%, var(--matcha-500) 80%, transparent 100%)',
+                          animation: 'shimmer 3s ease-in-out infinite',
+                        }}
+                      />
+                    </div>
+
+                    {/* Traveling data packets */}
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="absolute top-1/2 w-3 h-3 rounded-full"
+                        style={{
+                          background: i % 2 === 0 ? 'var(--matcha-400)' : 'var(--terra-400)',
+                          boxShadow: `0 0 15px ${i % 2 === 0 ? 'var(--matcha-400)' : 'var(--terra-400)'}`,
+                          transform: 'translateY(-50%)',
+                          animation: `travel ${2.5 + i * 0.5}s linear infinite`,
+                          animationDelay: `${i * 0.8}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Status card */}
+                  <div
+                    className="px-5 md:px-6 py-3 md:py-4 rounded-2xl backdrop-blur-md w-full"
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '1px solid rgba(104, 166, 125, 0.2)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                    }}
+                  >
+                    <div className="flex flex-col gap-3">
+                      {/* Status indicator */}
+                      <div className="flex items-center justify-center gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{
+                            background: '#10b981',
+                            boxShadow: '0 0 12px #10b981',
+                            animation: 'pulse-dot 1.5s ease-in-out infinite',
+                          }}
+                        />
+                        <span className="text-xs md:text-sm font-medium text-white/90">
+                          Live Translation
+                        </span>
+                      </div>
+
+                      {/* Translation arrow */}
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-xs font-mono text-matcha-300">EN</span>
+                        <svg width="60" height="12" viewBox="0 0 60 12" className="flex-shrink-0">
+                          <defs>
+                            <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="var(--matcha-400)" />
+                              <stop offset="100%" stopColor="var(--terra-400)" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            d="M2 6 L50 6 M45 2 L50 6 L45 10"
+                            stroke="url(#arrowGrad)"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                        </svg>
+                        <span className="text-xs font-mono text-terra-300">AR</span>
+                      </div>
+
+                      {/* Feature tags */}
+                      <div className="flex flex-wrap gap-2 justify-center text-[10px] md:text-xs">
+                        <span className="px-2 py-0.5 rounded bg-matcha-500/20 text-matcha-300 border border-matcha-500/30">
+                          Voice Clone
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-terra-500/20 text-terra-300 border border-terra-500/30">
+                          Context-Aware
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Voice Orb - Arabic */}
+                <div className="relative flex flex-col items-center gap-3 z-10">
+                  <div className="relative group">
+                    {/* Main orb */}
+                    <div
+                      className="w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center relative"
+                      style={{
+                        background: 'linear-gradient(135deg, var(--terra-400) 0%, var(--terra-600) 100%)',
+                        boxShadow: '0 0 60px rgba(198, 123, 94, 0.5), inset 0 2px 10px rgba(255, 255, 255, 0.2)',
+                      }}
+                    >
+                      {/* Microphone icon */}
+                      <svg className="w-10 h-10 md:w-12 md:h-12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="22" />
+                      </svg>
+
+                      {/* Inner glow */}
+                      <div
+                        className="absolute inset-3 rounded-full"
+                        style={{
+                          background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
+                          animation: 'pulse-glow 2s ease-in-out infinite 0.3s',
+                        }}
+                      />
+                    </div>
+
+                    {/* Pulse rings */}
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="absolute inset-0 rounded-full border-2"
+                        style={{
+                          borderColor: 'rgba(198, 123, 94, 0.4)',
+                          animation: `pulse-ring ${2.5 + i * 0.5}s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
+                          animationDelay: `${i * 0.4 + 0.3}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Language badge */}
+                  <div
+                    className="px-4 py-1.5 rounded-full backdrop-blur-sm"
+                    style={{
+                      background: 'rgba(198, 123, 94, 0.15)',
+                      border: '1px solid rgba(198, 123, 94, 0.3)',
+                    }}
+                  >
+                    <span className="text-xs md:text-sm font-bold tracking-wider" style={{ color: 'var(--terra-300)' }}>
+                      AR
+                    </span>
+                  </div>
+
+                  {/* Audio waves */}
+                  <div className="flex items-end gap-1 h-16 md:h-20">
+                    {[7, 5, 8, 6, 9, 5, 7, 4].map((height, i) => (
+                      <div
+                        key={i}
+                        className="w-1 md:w-1.5 rounded-full"
+                        style={{
+                          height: `${height * 6}px`,
+                          background: 'linear-gradient(to top, var(--terra-600), var(--terra-300))',
+                          animation: `audio-wave ${0.6 + i * 0.08}s ease-in-out infinite alternate`,
+                          animationDelay: `${i * 0.08 + 0.3}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating info badges - hidden on mobile */}
+              <div
+                className="hidden md:block absolute top-6 left-6 px-3 py-1.5 rounded-lg backdrop-blur-sm"
+                style={{
+                  background: 'rgba(104, 166, 125, 0.1)',
+                  border: '1px solid rgba(104, 166, 125, 0.2)',
+                  animation: 'float 4s ease-in-out infinite',
+                }}
+              >
+                <span className="text-xs font-medium text-matcha-300">20+ Languages</span>
+              </div>
+              <div
+                className="hidden md:block absolute top-6 right-6 px-3 py-1.5 rounded-lg backdrop-blur-sm"
+                style={{
+                  background: 'rgba(198, 123, 94, 0.1)',
+                  border: '1px solid rgba(198, 123, 94, 0.2)',
+                  animation: 'float 4s ease-in-out infinite 0.5s',
+                }}
+              >
+                <span className="text-xs font-medium text-terra-300">Zero Latency</span>
               </div>
             </div>
           </div>
@@ -480,7 +683,7 @@ export default function LandingPage() {
                   color: 'var(--matcha-600)',
                 }}
               >
-                Matcha
+                TRAVoices
               </p>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {t.landing.footerTagline}
@@ -557,7 +760,7 @@ export default function LandingPage() {
               color: 'var(--text-muted)',
             }}
           >
-            © 2024 Matcha. {t.landing.allRightsReserved}
+            © 2024 TRAVoices. {t.landing.allRightsReserved}
           </div>
         </div>
       </footer>
@@ -577,15 +780,6 @@ export default function LandingPage() {
           }
         }
 
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
         @keyframes float {
           0%,
           100% {
@@ -593,6 +787,86 @@ export default function LandingPage() {
           }
           50% {
             transform: translateY(-10px);
+          }
+        }
+
+        @keyframes float-slow {
+          0%,
+          100% {
+            transform: translate(0, 0);
+          }
+          50% {
+            transform: translate(30px, -30px);
+          }
+        }
+
+        @keyframes pulse-ring {
+          0% {
+            transform: scale(1);
+            opacity: 0.5;
+          }
+          100% {
+            transform: scale(1.8);
+            opacity: 0;
+          }
+        }
+
+        @keyframes pulse-glow {
+          0%,
+          100% {
+            opacity: 0.3;
+          }
+          50% {
+            opacity: 0.6;
+          }
+        }
+
+        @keyframes pulse-dot {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.3);
+            opacity: 0.7;
+          }
+        }
+
+        @keyframes audio-wave {
+          0% {
+            transform: scaleY(0.4);
+            opacity: 0.6;
+          }
+          100% {
+            transform: scaleY(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        @keyframes travel {
+          0% {
+            left: 0%;
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            left: 100%;
+            opacity: 0;
           }
         }
       `}</style>
