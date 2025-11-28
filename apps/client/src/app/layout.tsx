@@ -18,21 +18,23 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Matcha - Understand Your Mind",
+  title: "TRAVoices - Speak Naturally, Be Understood Instantly",
   description:
-    "The AI that decodes your thought patterns, identifies your cognitive biases, and helps you understand the root of your challenges.",
+    "AI-powered real-time voice translation platform. Speak any language and be heard in your own cloned voice. Bridge conversations across cultures with 20+ languages.",
   keywords: [
-    "psychology",
-    "AI",
-    "cognitive biases",
-    "personal development",
-    "psychological analysis",
+    "voice translation",
+    "AI translation",
+    "real-time translation",
+    "voice cloning",
+    "multilingual communication",
+    "language barrier",
+    "speech translation",
   ],
-  authors: [{ name: "Matcha" }],
+  authors: [{ name: "TRAVoices" }],
   openGraph: {
-    title: "Matcha - Understand Your Mind",
+    title: "TRAVoices - Speak Naturally, Be Understood Instantly",
     description:
-      "The AI that decodes your thought patterns and helps you overcome your blockers.",
+      "AI-powered real-time voice translation with natural voice cloning. Break language barriers instantly.",
     type: "website",
     locale: "en_US",
   },

@@ -1,7 +1,7 @@
 {
-  "name": "matcha",
+  "name": "travoices",
   "version": "1.0.0",
-  "description": "Matcha - AI Psychological Profiler",
+  "description": "TRAVoices - AI-Powered Real-Time Voice Translation Platform",
   "main": "index.js",
   "scripts": {
     "dev": "npm --workspace apps/client run dev",
@@ -9,8 +9,8 @@
     "start": "npm --workspace apps/client run start",
     "lint": "npm --workspace apps/client run lint"
   },
-  "keywords": ["ai", "psychology", "profiling", "saas"],
-  "author": "",
+  "keywords": ["ai", "voice translation", "real-time translation", "voice cloning", "multilingual", "saas"],
+  "author": "TRAVoices",
   "license": "ISC",
   "type": "commonjs",
   "private": true,
