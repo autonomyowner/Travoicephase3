@@ -9,16 +9,12 @@ import { useLanguage } from './LanguageProvider';
 export default function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthContext();
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     router.push('/');
-  };
-
-  const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'fr' : 'en');
   };
 
   return (
