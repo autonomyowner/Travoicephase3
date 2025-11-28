@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, DM_Serif_Display } from "next/font/google";
 import Header from "../components/Header";
 import { AuthProvider } from "../components/AuthProvider";
+import { LanguageProvider } from "../components/LanguageProvider";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -17,23 +18,23 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Matcha - Comprenez votre esprit",
+  title: "Matcha - Understand Your Mind",
   description:
-    "L'IA qui décode vos schémas de pensée, identifie vos biais cognitifs, et vous aide à comprendre la racine de vos défis.",
+    "The AI that decodes your thought patterns, identifies your cognitive biases, and helps you understand the root of your challenges.",
   keywords: [
-    "psychologie",
-    "IA",
-    "biais cognitifs",
-    "développement personnel",
-    "analyse psychologique",
+    "psychology",
+    "AI",
+    "cognitive biases",
+    "personal development",
+    "psychological analysis",
   ],
   authors: [{ name: "Matcha" }],
   openGraph: {
-    title: "Matcha - Comprenez votre esprit",
+    title: "Matcha - Understand Your Mind",
     description:
-      "L'IA qui décode vos schémas de pensée et vous aide à surmonter vos blocages.",
+      "The AI that decodes your thought patterns and helps you overcome your blockers.",
     type: "website",
-    locale: "fr_FR",
+    locale: "en_US",
   },
 };
 
@@ -43,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body
         className={`${dmSans.variable} ${dmSerif.variable} antialiased min-h-screen`}
         style={{
@@ -52,12 +53,14 @@ export default function RootLayout({
           fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
         }}
       >
-        <AuthProvider>
-          <div className="sticky top-0 z-50">
-            <Header />
-          </div>
-          <main>{children}</main>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <div className="sticky top-0 z-50">
+              <Header />
+            </div>
+            <main>{children}</main>
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

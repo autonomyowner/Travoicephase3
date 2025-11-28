@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import InteractiveDemo from '@/components/InteractiveDemo';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     setMounted(true);
@@ -61,7 +63,7 @@ export default function LandingPage() {
                 border: '1px solid var(--matcha-200)',
               }}
             >
-              Intelligence artificielle au service de votre esprit
+              {t.landing.eyebrow}
             </span>
           </div>
 
@@ -77,9 +79,9 @@ export default function LandingPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Comprenez votre esprit.
+            {t.landing.headline}
             <br />
-            <span className="text-gradient">Transformez votre vie.</span>
+            <span className="text-gradient">{t.landing.headlineHighlight}</span>
           </h1>
 
           {/* Subheadline */}
@@ -89,14 +91,12 @@ export default function LandingPage() {
             }`}
             style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}
           >
-            Matcha analyse vos schémas de pensée, identifie vos biais cognitifs,
-            et vous révèle les racines profondes de vos blocages. Une approche
-            révolutionnaire du développement personnel.
+            {t.landing.subheadline}
           </p>
 
           {/* CTA Buttons */}
           <div
-            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 transition-all duration-700 delay-300 ${
+            className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-20 transition-all duration-700 delay-300 ${
               mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
@@ -104,33 +104,13 @@ export default function LandingPage() {
               href="/signup"
               className="matcha-btn matcha-btn-primary text-base px-8 py-4"
             >
-              Commencer gratuitement
+              {t.landing.ctaStart}
             </Link>
             <Link
-              href="#comment-ca-marche"
+              href="#how-it-works"
               className="matcha-btn matcha-btn-secondary text-base px-8 py-4"
             >
-              Découvrir comment ça marche
-            </Link>
-          </div>
-
-          {/* Business CTA */}
-          <div
-            className={`flex justify-center mb-20 transition-all duration-700 delay-500 ${
-              mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
-            <Link
-              href="/business"
-              className="group relative inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-full transition-all duration-300 hover:scale-105"
-              style={{
-                background: 'linear-gradient(135deg, var(--terra-400) 0%, var(--terra-500) 100%)',
-                color: 'white',
-                boxShadow: '0 4px 14px rgba(198, 134, 103, 0.4)',
-              }}
-            >
-              <span className="relative">Business Machi Bricol</span>
-              <span className="relative">→</span>
+              {t.landing.ctaHow}
             </Link>
           </div>
 
@@ -197,7 +177,7 @@ export default function LandingPage() {
                       animation: 'float 4s ease-in-out infinite',
                     }}
                   >
-                    Biais cognitifs
+                    {t.landing.cognitiveBiases}
                   </div>
                   <div
                     className="absolute top-1/3 right-1/4 px-3 py-1.5 rounded-full text-xs font-medium"
@@ -208,7 +188,7 @@ export default function LandingPage() {
                       animation: 'float 5s ease-in-out infinite 1s',
                     }}
                   >
-                    Schémas de pensée
+                    {t.landing.thoughtPatterns}
                   </div>
                   <div
                     className="absolute bottom-1/3 left-1/3 px-3 py-1.5 rounded-full text-xs font-medium"
@@ -219,7 +199,7 @@ export default function LandingPage() {
                       animation: 'float 4.5s ease-in-out infinite 0.5s',
                     }}
                   >
-                    Analyse profonde
+                    {t.demo.analysisTitle}
                   </div>
                 </div>
               </div>
@@ -235,33 +215,35 @@ export default function LandingPage() {
             className="text-center text-sm font-medium mb-8"
             style={{ color: 'var(--text-muted)' }}
           >
-            Déjà adopté par des milliers de personnes en France
+            {t.landing.socialProof}
           </p>
           <div className="flex flex-wrap justify-center items-center gap-12">
-            {['4.9/5 satisfaction', '+10 000 analyses', '97% recommandent'].map(
-              (stat, i) => (
-                <div key={i} className="text-center">
-                  <p
-                    className="text-2xl font-semibold"
-                    style={{
-                      fontFamily: 'var(--font-dm-serif), Georgia, serif',
-                      color: 'var(--matcha-600)',
-                    }}
-                  >
-                    {stat.split(' ')[0]}
-                  </p>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    {stat.split(' ').slice(1).join(' ')}
-                  </p>
-                </div>
-              )
-            )}
+            {[
+              { value: '4.9/5', label: t.landing.satisfaction },
+              { value: '+10,000', label: t.landing.analyses },
+              { value: '97%', label: t.landing.recommend },
+            ].map((stat, i) => (
+              <div key={i} className="text-center">
+                <p
+                  className="text-2xl font-semibold"
+                  style={{
+                    fontFamily: 'var(--font-dm-serif), Georgia, serif',
+                    color: 'var(--matcha-600)',
+                  }}
+                >
+                  {stat.value}
+                </p>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  {stat.label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section id="comment-ca-marche" className="py-24 px-4">
+      <section id="how-it-works" className="py-24 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2
@@ -271,14 +253,13 @@ export default function LandingPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Comment ça marche
+              {t.landing.howItWorks}
             </h2>
             <p
               className="max-w-xl mx-auto"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Un processus simple en trois étapes pour comprendre et transformer
-              votre façon de penser.
+              {t.landing.howItWorksDesc}
             </p>
           </div>
 
@@ -286,21 +267,18 @@ export default function LandingPage() {
             {[
               {
                 step: '01',
-                title: 'Partagez vos pensées',
-                description:
-                  "Décrivez une situation, un défi ou une décision que vous souhaitez analyser. L'IA vous pose des questions ciblées pour comprendre votre contexte.",
+                title: t.landing.step1Title,
+                description: t.landing.step1Desc,
               },
               {
                 step: '02',
-                title: 'Analyse approfondie',
-                description:
-                  "Notre IA identifie vos schémas de pensée récurrents, détecte les biais cognitifs qui influencent vos décisions et révèle les causes profondes de vos blocages.",
+                title: t.landing.step2Title,
+                description: t.landing.step2Desc,
               },
               {
                 step: '03',
-                title: 'Insights personnalisés',
-                description:
-                  "Recevez un rapport détaillé avec des recommandations concrètes pour transformer vos schémas de pensée et atteindre vos objectifs.",
+                title: t.landing.step3Title,
+                description: t.landing.step3Desc,
               },
             ].map((item, i) => (
               <div
@@ -365,41 +343,36 @@ export default function LandingPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Ce que Matcha révèle
+              {t.landing.whatReveals}
             </h2>
             <p
               className="max-w-xl mx-auto"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Une analyse psychologique profonde pour comprendre ce qui vous
-              empêche d&apos;avancer.
+              {t.landing.whatRevealsDesc}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {[
               {
-                title: 'Biais cognitifs',
-                description:
-                  "Identifiez les biais inconscients qui faussent votre jugement : biais de confirmation, effet de halo, aversion à la perte, et bien d'autres.",
+                title: t.landing.cognitiveBiases,
+                description: t.landing.cognitiveBiasesDesc,
                 color: 'var(--matcha-500)',
               },
               {
-                title: 'Schémas de pensée',
-                description:
-                  'Découvrez vos patterns de réflexion récurrents et comprenez comment ils influencent vos décisions au quotidien.',
+                title: t.landing.thoughtPatterns,
+                description: t.landing.thoughtPatternsDesc,
                 color: 'var(--terra-400)',
               },
               {
-                title: 'Blocages émotionnels',
-                description:
-                  'Mettez en lumière les freins émotionnels qui vous empêchent de passer à l\'action et atteignez vos objectifs.',
+                title: t.landing.emotionalBlockers,
+                description: t.landing.emotionalBlockersDesc,
                 color: 'var(--matcha-600)',
               },
               {
-                title: 'Profil psychologique',
-                description:
-                  'Obtenez une vue d\'ensemble de votre fonctionnement mental avec des insights actionnables pour votre développement personnel.',
+                title: t.landing.psychProfile,
+                description: t.landing.psychProfileDesc,
                 color: 'var(--terra-500)',
               },
             ].map((feature, i) => (
@@ -442,29 +415,26 @@ export default function LandingPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Ils ont transformé leur vie
+              {t.landing.testimonials}
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                quote:
-                  "Matcha m'a permis de comprendre pourquoi je procrastinais sur mes projets importants. Les insights étaient incroyablement précis.",
-                name: 'Marie L.',
-                role: 'Entrepreneure, Paris',
+                quote: t.landing.testimonial1,
+                name: t.landing.testimonial1Name,
+                role: t.landing.testimonial1Role,
               },
               {
-                quote:
-                  "J'ai enfin compris mes schémas de pensée qui me bloquaient dans ma carrière. Une vraie révélation.",
-                name: 'Thomas D.',
-                role: 'Manager, Lyon',
+                quote: t.landing.testimonial2,
+                name: t.landing.testimonial2Name,
+                role: t.landing.testimonial2Role,
               },
               {
-                quote:
-                  "L'analyse de mes biais cognitifs a changé ma façon de prendre des décisions. Je recommande à 100%.",
-                name: 'Sophie M.',
-                role: 'Consultante, Bordeaux',
+                quote: t.landing.testimonial3,
+                name: t.landing.testimonial3Name,
+                role: t.landing.testimonial3Role,
               },
             ].map((testimonial, i) => (
               <div key={i} className="matcha-card p-6">
@@ -508,24 +478,23 @@ export default function LandingPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Commencez gratuitement
+            {t.landing.startFree}
           </h2>
           <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>
-            3 analyses offertes chaque mois. Passez à Pro pour des analyses
-            illimitées et un suivi personnalisé.
+            {t.landing.startFreeDesc}
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
               href="/signup"
               className="matcha-btn matcha-btn-primary text-base px-8 py-4"
             >
-              Créer mon compte gratuit
+              {t.landing.createFreeAccount}
             </Link>
             <Link
               href="/pricing"
               className="matcha-btn matcha-btn-secondary text-base px-8 py-4"
             >
-              Voir les tarifs
+              {t.landing.seePricing}
             </Link>
           </div>
         </div>
@@ -565,14 +534,13 @@ export default function LandingPage() {
                 color: 'white',
               }}
             >
-              Prêt à comprendre votre esprit ?
+              {t.landing.readyToUnderstand}
             </h2>
             <p
               className="mb-8 max-w-xl mx-auto relative z-10"
               style={{ color: 'rgba(255, 255, 255, 0.9)' }}
             >
-              Rejoignez des milliers de personnes qui ont transformé leur façon
-              de penser grâce à Matcha.
+              {t.landing.joinThousands}
             </p>
             <Link
               href="/signup"
@@ -583,7 +551,7 @@ export default function LandingPage() {
                 boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
               }}
             >
-              Commencer maintenant
+              {t.landing.startNow}
             </Link>
           </div>
         </div>
@@ -610,7 +578,7 @@ export default function LandingPage() {
                 Matcha
               </p>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                L&apos;IA qui comprend votre esprit
+                {t.landing.footerTagline}
               </p>
             </div>
             <div className="flex gap-8">
@@ -619,21 +587,21 @@ export default function LandingPage() {
                 className="text-sm hover:text-[var(--matcha-600)] transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Tarifs
+                {t.header.pricing}
               </Link>
               <Link
                 href="/login"
                 className="text-sm hover:text-[var(--matcha-600)] transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Connexion
+                {t.header.login}
               </Link>
               <Link
                 href="/signup"
                 className="text-sm hover:text-[var(--matcha-600)] transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Inscription
+                {t.common.signup}
               </Link>
             </div>
           </div>
@@ -644,7 +612,7 @@ export default function LandingPage() {
               color: 'var(--text-muted)',
             }}
           >
-            © 2024 Matcha. Tous droits réservés.
+            © 2024 Matcha. {t.landing.allRightsReserved}
           </div>
         </div>
       </footer>

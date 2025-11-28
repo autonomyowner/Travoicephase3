@@ -2,9 +2,17 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useLanguage } from '../../components/LanguageProvider';
 
 export default function PricingPage() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const { t, language } = useLanguage();
+
+  const currency = language === 'en' ? '$' : '€';
+  const monthlyPrice = language === 'en' ? '15' : '15';
+  const yearlyPrice = language === 'en' ? '12' : '12';
+  const yearlyTotal = language === 'en' ? '144' : '144';
+  const yearlySavings = language === 'en' ? '36' : '36';
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--cream-50)' }}>
@@ -38,14 +46,13 @@ export default function PricingPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Des tarifs simples et transparents
+            {t.pricing.title}
           </h1>
           <p
             className="text-lg max-w-2xl mx-auto mb-8"
             style={{ color: 'var(--text-secondary)' }}
           >
-            Commencez gratuitement, passez à Pro quand vous êtes prêt. Sans
-            engagement, annulable à tout moment.
+            {t.pricing.subtitle}
           </p>
 
           {/* Billing Toggle */}
@@ -61,7 +68,7 @@ export default function PricingPage() {
                 color: billingPeriod === 'monthly' ? 'var(--matcha-700)' : 'var(--text-secondary)',
               }}
             >
-              Mensuel
+              {t.pricing.monthly}
             </button>
             <button
               onClick={() => setBillingPeriod('yearly')}
@@ -74,7 +81,7 @@ export default function PricingPage() {
                 color: billingPeriod === 'yearly' ? 'var(--matcha-700)' : 'var(--text-secondary)',
               }}
             >
-              Annuel
+              {t.pricing.yearly}
               <span
                 className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full text-xs font-semibold"
                 style={{
@@ -110,7 +117,7 @@ export default function PricingPage() {
                     color: 'var(--matcha-700)',
                   }}
                 >
-                  Gratuit
+                  {t.pricing.free}
                 </span>
                 <h2
                   className="text-2xl mb-2"
@@ -119,33 +126,32 @@ export default function PricingPage() {
                     color: 'var(--text-primary)',
                   }}
                 >
-                  Découverte
+                  {t.pricing.discovery}
                 </h2>
                 <div className="flex items-baseline gap-1">
                   <span
                     className="text-4xl font-bold"
                     style={{ color: 'var(--text-primary)' }}
                   >
-                    0€
+                    0{currency}
                   </span>
-                  <span style={{ color: 'var(--text-muted)' }}>/mois</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{t.pricing.perMonth}</span>
                 </div>
                 <p
                   className="mt-2 text-sm"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  Parfait pour découvrir Matcha et comprendre vos premiers
-                  schémas de pensée.
+                  {t.pricing.freeDesc}
                 </p>
               </div>
 
               <ul className="space-y-4 mb-8">
                 {[
-                  '3 analyses par mois',
-                  'Profil psychologique de base',
-                  'Identification des biais principaux',
-                  'Accès à la communauté',
-                  'Export des rapports (PDF)',
+                  t.pricing.freeFeature1,
+                  t.pricing.freeFeature2,
+                  t.pricing.freeFeature3,
+                  t.pricing.freeFeature4,
+                  t.pricing.freeFeature5,
                 ].map((feature, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span
@@ -163,7 +169,7 @@ export default function PricingPage() {
                 href="/signup?plan=gratuit"
                 className="matcha-btn matcha-btn-secondary w-full justify-center"
               >
-                Commencer gratuitement
+                {t.pricing.startFree}
               </Link>
             </div>
 
@@ -184,7 +190,7 @@ export default function PricingPage() {
                   boxShadow: '0 4px 12px rgba(224, 123, 76, 0.4)',
                 }}
               >
-                Le plus populaire
+                {t.pricing.mostPopular}
               </div>
 
               <div className="mb-6">
@@ -195,7 +201,7 @@ export default function PricingPage() {
                     color: 'white',
                   }}
                 >
-                  Pro
+                  {t.pricing.pro}
                 </span>
                 <h2
                   className="text-2xl mb-2"
@@ -204,38 +210,37 @@ export default function PricingPage() {
                     color: 'white',
                   }}
                 >
-                  Transformation
+                  {t.pricing.transformation}
                 </h2>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
-                    {billingPeriod === 'monthly' ? '15€' : '12€'}
+                    {billingPeriod === 'monthly' ? monthlyPrice : yearlyPrice}{currency}
                   </span>
-                  <span style={{ color: 'rgba(255, 255, 255, 0.8)' }}>/mois</span>
+                  <span style={{ color: 'rgba(255, 255, 255, 0.8)' }}>{t.pricing.perMonth}</span>
                 </div>
                 {billingPeriod === 'yearly' && (
                   <p className="text-sm mt-1" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                    Facturé 144€/an (économisez 36€)
+                    {t.pricing.billedYearly.replace('{amount}', yearlyTotal + currency).replace('{savings}', yearlySavings + currency)}
                   </p>
                 )}
                 <p
                   className="mt-2 text-sm"
                   style={{ color: 'rgba(255, 255, 255, 0.85)' }}
                 >
-                  Pour ceux qui veulent vraiment transformer leur façon de
-                  penser.
+                  {t.pricing.proDesc}
                 </p>
               </div>
 
               <ul className="space-y-4 mb-8">
                 {[
-                  'Analyses illimitées',
-                  'Profil psychologique complet',
-                  'Tous les biais cognitifs détectés',
-                  'Suivi de progression mensuel',
-                  'Rapports hebdomadaires personnalisés',
-                  'Chat IA pour approfondir',
-                  'Support prioritaire',
-                  'Accès anticipé aux nouvelles fonctionnalités',
+                  t.pricing.proFeature1,
+                  t.pricing.proFeature2,
+                  t.pricing.proFeature3,
+                  t.pricing.proFeature4,
+                  t.pricing.proFeature5,
+                  t.pricing.proFeature6,
+                  t.pricing.proFeature7,
+                  t.pricing.proFeature8,
                 ].map((feature, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span
@@ -258,7 +263,7 @@ export default function PricingPage() {
                   boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
                 }}
               >
-                Essayer Pro gratuitement 14 jours
+                {t.pricing.tryPro}
               </Link>
             </div>
           </div>
@@ -278,7 +283,7 @@ export default function PricingPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Comparez les fonctionnalités
+            {t.pricing.compareTitle}
           </h2>
 
           <div
@@ -295,32 +300,32 @@ export default function PricingPage() {
                     className="text-left py-4 px-6 font-medium"
                     style={{ color: 'var(--text-secondary)' }}
                   >
-                    Fonctionnalité
+                    {t.pricing.feature}
                   </th>
                   <th
                     className="text-center py-4 px-6 font-medium"
                     style={{ color: 'var(--text-secondary)' }}
                   >
-                    Gratuit
+                    {t.pricing.free}
                   </th>
                   <th
                     className="text-center py-4 px-6 font-medium"
                     style={{ color: 'var(--matcha-600)' }}
                   >
-                    Pro
+                    {t.pricing.pro}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { feature: 'Analyses par mois', free: '3', pro: 'Illimitées' },
-                  { feature: 'Profil psychologique', free: 'Basique', pro: 'Complet' },
-                  { feature: 'Biais cognitifs détectés', free: '5 principaux', pro: 'Tous (20+)' },
-                  { feature: 'Suivi de progression', free: 'Non', pro: 'Oui' },
-                  { feature: 'Rapports personnalisés', free: 'Non', pro: 'Hebdomadaires' },
-                  { feature: 'Chat IA approfondi', free: 'Non', pro: 'Oui' },
-                  { feature: 'Export PDF', free: 'Oui', pro: 'Oui' },
-                  { feature: 'Support', free: 'Communauté', pro: 'Prioritaire' },
+                  { feature: t.pricing.analysesPerMonth, free: '3', pro: t.pricing.unlimited },
+                  { feature: t.pricing.psychProfile, free: t.pricing.basic, pro: t.pricing.complete },
+                  { feature: t.pricing.biasesDetected, free: t.pricing.mainOnly, pro: t.pricing.all20Plus },
+                  { feature: t.pricing.progressTracking, free: t.pricing.no, pro: t.pricing.yes },
+                  { feature: t.pricing.personalizedReports, free: t.pricing.no, pro: t.pricing.weekly },
+                  { feature: t.pricing.deepAIChat, free: t.pricing.no, pro: t.pricing.yes },
+                  { feature: t.pricing.pdfExport, free: t.pricing.yes, pro: t.pricing.yes },
+                  { feature: t.pricing.support, free: t.pricing.community, pro: t.pricing.priority },
                 ].map((row, i) => (
                   <tr
                     key={i}
@@ -373,21 +378,19 @@ export default function PricingPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Garantie satisfait ou remboursé 30 jours
+              {t.pricing.guaranteeTitle}
             </h2>
             <p
               className="max-w-xl mx-auto mb-6"
               style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}
             >
-              Si Matcha ne vous aide pas à mieux comprendre vos schémas de
-              pensée, nous vous remboursons intégralement. Sans questions, sans
-              conditions.
+              {t.pricing.guaranteeDesc}
             </p>
             <div className="flex flex-wrap justify-center gap-8 text-sm">
               {[
-                'Annulation en 1 clic',
-                'Aucun engagement',
-                'Remboursement immédiat',
+                t.pricing.cancelAnytime,
+                t.pricing.noCommitment,
+                t.pricing.immediateRefund,
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <span
@@ -415,31 +418,16 @@ export default function PricingPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Questions fréquentes
+            {t.pricing.faqTitle}
           </h2>
 
           <div className="space-y-4">
             {[
-              {
-                q: "Comment fonctionne l'essai gratuit Pro ?",
-                a: "Vous avez accès à toutes les fonctionnalités Pro pendant 14 jours. Aucune carte bancaire requise pour commencer. À la fin de l'essai, vous pouvez choisir de continuer avec Pro ou revenir au plan gratuit.",
-              },
-              {
-                q: 'Puis-je changer de plan à tout moment ?',
-                a: 'Oui, vous pouvez passer de Gratuit à Pro ou annuler votre abonnement Pro à tout moment. Les changements prennent effet immédiatement.',
-              },
-              {
-                q: 'Mes données sont-elles sécurisées ?',
-                a: 'Absolument. Vos données sont chiffrées et stockées en France. Nous ne partageons jamais vos informations avec des tiers. Vous pouvez demander la suppression de vos données à tout moment.',
-              },
-              {
-                q: "Qu'est-ce qu'une analyse ?",
-                a: "Une analyse est une session où vous partagez une situation, un défi ou une décision avec l'IA. Elle identifie vos biais cognitifs, schémas de pensée et génère un rapport personnalisé.",
-              },
-              {
-                q: 'Le paiement est-il sécurisé ?',
-                a: 'Oui, tous les paiements sont traités par Stripe, leader mondial du paiement en ligne. Nous ne stockons jamais vos informations bancaires.',
-              },
+              { q: t.pricing.faq1Q, a: t.pricing.faq1A },
+              { q: t.pricing.faq2Q, a: t.pricing.faq2A },
+              { q: t.pricing.faq3Q, a: t.pricing.faq3A },
+              { q: t.pricing.faq4Q, a: t.pricing.faq4A },
+              { q: t.pricing.faq5Q, a: t.pricing.faq5A },
             ].map((faq, i) => (
               <details
                 key={i}
@@ -483,24 +471,23 @@ export default function PricingPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Prêt à transformer votre façon de penser ?
+            {t.pricing.readyToTransform}
           </h2>
           <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>
-            Rejoignez des milliers de personnes qui ont déjà commencé leur
-            voyage avec Matcha.
+            {t.pricing.joinThousands}
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
               href="/signup"
               className="matcha-btn matcha-btn-primary text-base px-8 py-4"
             >
-              Commencer gratuitement
+              {t.pricing.startFree}
             </Link>
             <Link
               href={`/checkout?plan=pro&billing=${billingPeriod}`}
               className="matcha-btn matcha-btn-secondary text-base px-8 py-4"
             >
-              Essayer Pro 14 jours
+              {t.pricing.tryPro}
             </Link>
           </div>
         </div>
@@ -527,7 +514,7 @@ export default function PricingPage() {
                 Matcha
               </p>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                L&apos;IA qui comprend votre esprit
+                {t.landing.footerTagline}
               </p>
             </div>
             <div className="flex gap-8">
@@ -536,21 +523,21 @@ export default function PricingPage() {
                 className="text-sm hover:text-[var(--matcha-600)] transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Accueil
+                {t.header.home}
               </Link>
               <Link
                 href="/login"
                 className="text-sm hover:text-[var(--matcha-600)] transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Connexion
+                {t.header.login}
               </Link>
               <Link
                 href="/signup"
                 className="text-sm hover:text-[var(--matcha-600)] transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Inscription
+                {t.common.signup}
               </Link>
             </div>
           </div>
@@ -561,7 +548,7 @@ export default function PricingPage() {
               color: 'var(--text-muted)',
             }}
           >
-            © 2024 Matcha. Tous droits réservés.
+            © 2024 Matcha. {t.landing.allRightsReserved}
           </div>
         </div>
       </footer>

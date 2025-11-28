@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '../../components/AuthProvider';
+import { useLanguage } from '../../components/LanguageProvider';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
@@ -11,6 +12,7 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signup, isAuthenticated, isLoading: authLoading } = useAuthContext();
+  const { t } = useLanguage();
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +29,7 @@ function SignupForm() {
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      router.replace('/tableau-de-bord');
+      router.replace('/dashboard');
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -38,9 +40,9 @@ function SignupForm() {
 
     try {
       await signup(email, password, prenom);
-      router.push('/tableau-de-bord');
+      router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      setError(err instanceof Error ? err.message : t.signup.error);
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +54,7 @@ function SignupForm() {
         className="min-h-screen flex items-center justify-center"
         style={{ background: 'var(--cream-50)' }}
       >
-        <p style={{ color: 'var(--text-secondary)' }}>Chargement...</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t.signup.loading}</p>
       </div>
     );
   }
@@ -102,10 +104,10 @@ function SignupForm() {
                 color: 'var(--text-primary)',
               }}
             >
-              Commencez votre voyage intérieur
+              {t.signup.title}
             </h1>
             <p style={{ color: 'var(--text-secondary)' }}>
-              Créez votre compte Matcha en quelques secondes
+              {t.signup.subtitle}
             </p>
           </div>
 
@@ -121,7 +123,7 @@ function SignupForm() {
               className="text-sm font-medium mb-3"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Choisissez votre plan
+              {t.signup.choosePlan}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -139,13 +141,13 @@ function SignupForm() {
                   className="block font-semibold mb-1"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  Gratuit
+                  {t.signup.free}
                 </span>
                 <span
                   className="block text-sm"
                   style={{ color: 'var(--text-muted)' }}
                 >
-                  3 analyses/mois
+                  {t.signup.freeDesc}
                 </span>
               </button>
               <button
@@ -169,19 +171,19 @@ function SignupForm() {
                     color: 'white',
                   }}
                 >
-                  14j gratuit
+                  {t.signup.freeTrial}
                 </span>
                 <span
                   className="block font-semibold mb-1"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  Pro - 15€/mois
+                  {t.signup.proPrice}
                 </span>
                 <span
                   className="block text-sm"
                   style={{ color: 'var(--text-muted)' }}
                 >
-                  Analyses illimitées
+                  {t.signup.proDesc}
                 </span>
               </button>
             </div>
@@ -198,34 +200,34 @@ function SignupForm() {
           >
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
-                label="Prénom"
+                label={t.signup.firstName}
                 type="text"
                 value={prenom}
                 onChange={(e) => setPrenom(e.target.value)}
-                placeholder="Votre prénom"
+                placeholder={t.signup.firstNamePlaceholder}
                 required
                 autoComplete="given-name"
               />
 
               <Input
-                label="Adresse email"
+                label={t.signup.email}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="vous@exemple.com"
+                placeholder={t.signup.emailPlaceholder}
                 required
                 autoComplete="email"
               />
 
               <Input
-                label="Mot de passe"
+                label={t.signup.password}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimum 6 caractères"
+                placeholder={t.signup.passwordPlaceholder}
                 required
                 autoComplete="new-password"
-                hint="Au moins 6 caractères"
+                hint={t.signup.passwordHint}
               />
 
               {error && (
@@ -242,7 +244,7 @@ function SignupForm() {
               )}
 
               <Button type="submit" fullWidth isLoading={isLoading} size="lg">
-                Créer mon compte
+                {t.signup.createAccount}
               </Button>
             </form>
 
@@ -254,13 +256,13 @@ function SignupForm() {
                 className="text-center text-sm"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Déjà inscrit ?{' '}
+                {t.signup.alreadyRegistered}{' '}
                 <Link
                   href="/login"
                   className="font-medium hover:underline"
                   style={{ color: 'var(--matcha-600)' }}
                 >
-                  Se connecter
+                  {t.signup.signIn}
                 </Link>
               </p>
             </div>
@@ -271,8 +273,7 @@ function SignupForm() {
             className="mt-6 text-center text-xs"
             style={{ color: 'var(--text-muted)' }}
           >
-            En créant un compte, vous acceptez nos conditions d&apos;utilisation
-            et notre politique de confidentialité.
+            {t.signup.terms}
           </p>
         </div>
       </div>
@@ -281,6 +282,7 @@ function SignupForm() {
 }
 
 export default function SignupPage() {
+  const { t } = useLanguage();
   return (
     <Suspense
       fallback={
@@ -288,7 +290,7 @@ export default function SignupPage() {
           className="min-h-screen flex items-center justify-center"
           style={{ background: 'var(--cream-50)' }}
         >
-          <p style={{ color: 'var(--text-secondary)' }}>Chargement...</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t?.signup?.loading || 'Loading...'}</p>
         </div>
       }
     >

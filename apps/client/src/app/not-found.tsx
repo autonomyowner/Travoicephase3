@@ -1,6 +1,11 @@
+'use client';
+
 import Link from 'next/link';
+import { useLanguage } from '../components/LanguageProvider';
 
 export default function NotFound() {
+  const { t } = useLanguage();
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4"
@@ -22,16 +27,16 @@ export default function NotFound() {
           color: 'var(--text-primary)',
         }}
       >
-        Page introuvable
+        {t.notFound.title}
       </h2>
       <p className="mb-6 text-center" style={{ color: 'var(--text-secondary)' }}>
-        Désolé, la page que vous cherchez n&apos;existe pas ou a été déplacée.
+        {t.notFound.description}
       </p>
       <Link
         href="/"
         className="matcha-btn matcha-btn-primary"
       >
-        Retour à l&apos;accueil
+        {t.notFound.backHome}
       </Link>
     </div>
   );

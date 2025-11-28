@@ -4,15 +4,21 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from './AuthProvider';
+import { useLanguage } from './LanguageProvider';
 
 export default function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthContext();
+  const { language, setLanguage, t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     router.push('/');
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'fr' : 'en');
   };
 
   return (
@@ -45,35 +51,47 @@ export default function Header() {
               className="text-sm font-medium transition-colors hover:text-[var(--matcha-600)]"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Accueil
+              {t.header.home}
             </Link>
             <Link
               href="/pricing"
               className="text-sm font-medium transition-colors hover:text-[var(--matcha-600)]"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Tarifs
+              {t.header.pricing}
             </Link>
             {isAuthenticated && (
               <Link
-                href="/tableau-de-bord"
+                href="/dashboard"
                 className="text-sm font-medium transition-colors hover:text-[var(--matcha-600)]"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Tableau de bord
+                {t.header.dashboard}
               </Link>
             )}
           </nav>
 
-          {/* Desktop Auth Buttons */}
+          {/* Desktop Auth Buttons + Language Switcher */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Language Switcher */}
+            <button
+              onClick={toggleLanguage}
+              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:bg-[var(--cream-200)]"
+              style={{
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-soft)',
+              }}
+            >
+              {language === 'en' ? 'FR' : 'EN'}
+            </button>
+
             {isAuthenticated ? (
               <>
                 <span
                   className="text-sm"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  Bonjour, {user?.prenom}
+                  {t.header.hello}, {user?.prenom}
                 </span>
                 {user?.plan === 'pro' && (
                   <span className="matcha-badge matcha-badge-pro">Pro</span>
@@ -82,7 +100,7 @@ export default function Header() {
                   onClick={handleLogout}
                   className="matcha-btn matcha-btn-secondary text-sm px-4 py-2"
                 >
-                  Déconnexion
+                  {t.header.logout}
                 </button>
               </>
             ) : (
@@ -92,10 +110,10 @@ export default function Header() {
                   className="text-sm font-medium transition-colors hover:text-[var(--matcha-600)]"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  Connexion
+                  {t.header.login}
                 </Link>
                 <Link href="/signup" className="matcha-btn matcha-btn-primary text-sm px-5 py-2">
-                  Commencer
+                  {t.header.getStarted}
                 </Link>
               </>
             )}
@@ -137,7 +155,7 @@ export default function Header() {
                 style={{ color: 'var(--text-secondary)' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Accueil
+                {t.header.home}
               </Link>
               <Link
                 href="/pricing"
@@ -145,18 +163,36 @@ export default function Header() {
                 style={{ color: 'var(--text-secondary)' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Tarifs
+                {t.header.pricing}
               </Link>
               {isAuthenticated && (
                 <Link
-                  href="/tableau-de-bord"
+                  href="/dashboard"
                   className="text-sm font-medium py-2"
                   style={{ color: 'var(--text-secondary)' }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Tableau de bord
+                  {t.header.dashboard}
                 </Link>
               )}
+
+              {/* Mobile Language Switcher */}
+              <button
+                onClick={toggleLanguage}
+                className="text-sm font-medium py-2 text-left flex items-center gap-2"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <span
+                  className="px-2 py-1 rounded text-xs"
+                  style={{
+                    background: 'var(--cream-200)',
+                  }}
+                >
+                  {language === 'en' ? 'EN' : 'FR'}
+                </span>
+                {language === 'en' ? 'Switch to French' : 'Passer en anglais'}
+              </button>
+
               <div className="pt-3 border-t border-[var(--border-soft)]">
                 {isAuthenticated ? (
                   <div className="flex flex-col gap-3">
@@ -164,7 +200,7 @@ export default function Header() {
                       className="text-sm"
                       style={{ color: 'var(--text-secondary)' }}
                     >
-                      Bonjour, {user?.prenom}
+                      {t.header.hello}, {user?.prenom}
                       {user?.plan === 'pro' && (
                         <span className="ml-2 matcha-badge matcha-badge-pro">
                           Pro
@@ -178,7 +214,7 @@ export default function Header() {
                       }}
                       className="matcha-btn matcha-btn-secondary text-sm w-full"
                     >
-                      Déconnexion
+                      {t.header.logout}
                     </button>
                   </div>
                 ) : (
@@ -188,14 +224,14 @@ export default function Header() {
                       className="matcha-btn matcha-btn-secondary text-sm w-full text-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Connexion
+                      {t.header.login}
                     </Link>
                     <Link
                       href="/signup"
                       className="matcha-btn matcha-btn-primary text-sm w-full text-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Commencer
+                      {t.header.getStarted}
                     </Link>
                   </div>
                 )}

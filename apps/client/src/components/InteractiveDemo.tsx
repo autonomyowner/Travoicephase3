@@ -1,63 +1,24 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useLanguage } from './LanguageProvider';
 
 interface Message {
   type: 'user' | 'ai';
-  text: string;
+  textKey: 'userMsg1' | 'aiMsg1' | 'userMsg2' | 'aiMsg2' | 'userMsg3';
   delay: number;
 }
 
-interface AnalyticsData {
-  biases: { name: string; percentage: number; color: string }[];
-  emotionalState: { label: string; value: string };
-  thinkingPattern: string;
-  insight: string;
-}
-
 const demoMessages: Message[] = [
-  {
-    type: 'user',
-    text: "Je procrastine beaucoup sur un projet important au travail. Je n'arrive pas à m'y mettre.",
-    delay: 0,
-  },
-  {
-    type: 'ai',
-    text: "Je comprends. Pouvez-vous me décrire ce que vous ressentez quand vous pensez à ce projet ?",
-    delay: 2500,
-  },
-  {
-    type: 'user',
-    text: "Je ressens une sorte d'anxiété... j'ai peur de ne pas être à la hauteur.",
-    delay: 5500,
-  },
-  {
-    type: 'ai',
-    text: "Merci pour votre honnêteté. Avez-vous déjà vécu une situation similaire où vous avez réussi malgré vos doutes ?",
-    delay: 8500,
-  },
-  {
-    type: 'user',
-    text: "Oui, plusieurs fois en fait. Mais à chaque fois j'oublie ces réussites.",
-    delay: 12000,
-  },
+  { type: 'user', textKey: 'userMsg1', delay: 0 },
+  { type: 'ai', textKey: 'aiMsg1', delay: 2500 },
+  { type: 'user', textKey: 'userMsg2', delay: 5500 },
+  { type: 'ai', textKey: 'aiMsg2', delay: 8500 },
+  { type: 'user', textKey: 'userMsg3', delay: 12000 },
 ];
 
-const analyticsData: AnalyticsData = {
-  biases: [
-    { name: 'Biais de négativité', percentage: 78, color: 'var(--terra-400)' },
-    { name: 'Syndrome de l\'imposteur', percentage: 85, color: 'var(--matcha-500)' },
-    { name: 'Aversion à la perte', percentage: 62, color: 'var(--terra-500)' },
-  ],
-  emotionalState: {
-    label: 'État émotionnel dominant',
-    value: 'Anxiété de performance',
-  },
-  thinkingPattern: 'Perfectionnisme paralysant',
-  insight: 'Tendance à minimiser les succès passés et amplifier les risques futurs.',
-};
-
 export default function InteractiveDemo() {
+  const { t } = useLanguage();
   const [visibleMessages, setVisibleMessages] = useState<number>(0);
   const [typingMessage, setTypingMessage] = useState<string>('');
   const [isTyping, setIsTyping] = useState(false);
@@ -68,6 +29,12 @@ export default function InteractiveDemo() {
   const [hasStarted, setHasStarted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+
+  const biases = [
+    { name: t.demo.negativityBias, percentage: 78, color: 'var(--terra-400)' },
+    { name: t.demo.imposterSyndrome, percentage: 85, color: 'var(--matcha-500)' },
+    { name: t.demo.lossAversion, percentage: 62, color: 'var(--terra-500)' },
+  ];
 
   // Intersection observer to start animation when in view
   useEffect(() => {
@@ -103,6 +70,7 @@ export default function InteractiveDemo() {
       }
 
       const message = demoMessages[index];
+      const messageText = t.demo[message.textKey];
       setCurrentTypingIndex(index);
       setIsTyping(true);
       setTypingMessage('');
@@ -110,8 +78,8 @@ export default function InteractiveDemo() {
       // Typing animation
       let charIndex = 0;
       const typingInterval = setInterval(() => {
-        if (charIndex <= message.text.length) {
-          setTypingMessage(message.text.slice(0, charIndex));
+        if (charIndex <= messageText.length) {
+          setTypingMessage(messageText.slice(0, charIndex));
           charIndex++;
         } else {
           clearInterval(typingInterval);
@@ -121,7 +89,7 @@ export default function InteractiveDemo() {
 
           // Schedule next message
           const nextDelay = index + 1 < demoMessages.length
-            ? demoMessages[index + 1].delay - message.delay - (message.text.length * 30) - 500
+            ? demoMessages[index + 1].delay - message.delay - (messageText.length * 30) - 500
             : 0;
 
           setTimeout(() => showNextMessage(index + 1), Math.max(nextDelay, 800));
@@ -132,7 +100,7 @@ export default function InteractiveDemo() {
     // Start the sequence
     const startTimeout = setTimeout(() => showNextMessage(0), 1000);
     return () => clearTimeout(startTimeout);
-  }, [isInView]);
+  }, [isInView, t.demo]);
 
   // Scroll chat to bottom when new messages appear
   useEffect(() => {
@@ -179,7 +147,7 @@ export default function InteractiveDemo() {
               border: '1px solid var(--matcha-200)',
             }}
           >
-            Démo interactive
+            {t.demo.badge}
           </span>
           <h2
             className="text-3xl md:text-4xl mb-4"
@@ -188,13 +156,13 @@ export default function InteractiveDemo() {
               color: 'var(--text-primary)',
             }}
           >
-            Voyez Matcha en action
+            {t.demo.title}
           </h2>
           <p
             className="max-w-xl mx-auto"
             style={{ color: 'var(--text-secondary)' }}
           >
-            Découvrez comment notre IA analyse vos pensées et révèle des insights profonds en quelques échanges.
+            {t.demo.description}
           </p>
         </div>
 
@@ -237,7 +205,7 @@ export default function InteractiveDemo() {
                 color: 'var(--matcha-700)',
               }}
             >
-              Rejouer
+              {t.demo.replay}
             </button>
           </div>
 
@@ -257,10 +225,10 @@ export default function InteractiveDemo() {
                 </div>
                 <div>
                   <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
-                    Session d&apos;analyse
+                    {t.demo.sessionTitle}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    Matcha AI
+                    {t.demo.aiName}
                   </p>
                 </div>
               </div>
@@ -290,8 +258,7 @@ export default function InteractiveDemo() {
                     }}
                   >
                     <p className="text-sm" style={{ color: 'var(--text-primary)', lineHeight: 1.6 }}>
-                      Bonjour ! Je suis là pour vous aider à mieux comprendre vos schémas de pensée.
-                      Qu&apos;est-ce qui vous préoccupe en ce moment ?
+                      {t.demo.aiGreeting}
                     </p>
                   </div>
                 </div>
@@ -322,7 +289,7 @@ export default function InteractiveDemo() {
                       }}
                     >
                       <p className="text-sm" style={{ lineHeight: 1.6 }}>
-                        {message.text}
+                        {t.demo[message.textKey]}
                       </p>
                     </div>
                   </div>
@@ -370,7 +337,7 @@ export default function InteractiveDemo() {
                 }}
               >
                 <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  Écrivez votre message...
+                  {t.demo.placeholder}
                 </span>
               </div>
             </div>
@@ -385,7 +352,7 @@ export default function InteractiveDemo() {
                     color: 'var(--text-primary)',
                   }}
                 >
-                  Analyse en temps réel
+                  {t.demo.analysisTitle}
                 </h3>
                 {showAnalytics && (
                   <span
@@ -395,7 +362,7 @@ export default function InteractiveDemo() {
                       color: 'var(--matcha-700)',
                     }}
                   >
-                    Analyse complète
+                    {t.demo.analysisComplete}
                   </span>
                 )}
               </div>
@@ -412,9 +379,9 @@ export default function InteractiveDemo() {
                     />
                   </div>
                   <p className="text-sm text-center" style={{ color: 'var(--text-muted)' }}>
-                    L&apos;IA analyse la conversation...
+                    {t.demo.analyzing}
                     <br />
-                    <span className="text-xs">Les insights apparaîtront ici</span>
+                    <span className="text-xs">{t.demo.insightsAppear}</span>
                   </p>
                 </div>
               ) : (
@@ -430,7 +397,7 @@ export default function InteractiveDemo() {
                     }}
                   >
                     <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
-                      {analyticsData.emotionalState.label}
+                      {t.demo.emotionalState}
                     </p>
                     <p
                       className="text-lg font-medium"
@@ -439,7 +406,7 @@ export default function InteractiveDemo() {
                         color: 'var(--terra-500)',
                       }}
                     >
-                      {analyticsData.emotionalState.value}
+                      {t.demo.performanceAnxiety}
                     </p>
                   </div>
 
@@ -454,7 +421,7 @@ export default function InteractiveDemo() {
                     }}
                   >
                     <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
-                      Schéma de pensée détecté
+                      {t.demo.thinkingPattern}
                     </p>
                     <p
                       className="text-lg font-medium"
@@ -463,7 +430,7 @@ export default function InteractiveDemo() {
                         color: 'var(--matcha-600)',
                       }}
                     >
-                      {analyticsData.thinkingPattern}
+                      {t.demo.paralyzingPerfectionism}
                     </p>
                   </div>
 
@@ -478,10 +445,10 @@ export default function InteractiveDemo() {
                     }}
                   >
                     <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-muted)' }}>
-                      Biais cognitifs identifiés
+                      {t.demo.biasesIdentified}
                     </p>
                     <div className="space-y-3">
-                      {analyticsData.biases.map((bias, index) => (
+                      {biases.map((bias, index) => (
                         <div key={index}>
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
@@ -519,10 +486,10 @@ export default function InteractiveDemo() {
                     }}
                   >
                     <p className="text-xs font-medium mb-2" style={{ color: 'var(--matcha-700)' }}>
-                      Insight clé
+                      {t.demo.keyInsight}
                     </p>
                     <p className="text-sm" style={{ color: 'var(--text-primary)', lineHeight: 1.6 }}>
-                      {analyticsData.insight}
+                      {t.demo.insightText}
                     </p>
                   </div>
                 </div>
@@ -534,13 +501,13 @@ export default function InteractiveDemo() {
         {/* Bottom CTA */}
         <div className="text-center mt-10">
           <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-            Prêt à découvrir vos propres schémas de pensée ?
+            {t.demo.readyDiscover}
           </p>
           <a
             href="/signup"
             className="matcha-btn matcha-btn-primary text-base px-8 py-4 inline-block"
           >
-            Commencer mon analyse gratuite
+            {t.demo.startFreeAnalysis}
           </a>
         </div>
       </div>

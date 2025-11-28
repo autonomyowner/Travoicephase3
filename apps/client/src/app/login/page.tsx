@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '../../components/AuthProvider';
+import { useLanguage } from '../../components/LanguageProvider';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading: authLoading } = useAuthContext();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +19,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      router.replace('/tableau-de-bord');
+      router.replace('/dashboard');
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -28,9 +30,9 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/tableau-de-bord');
+      router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      setError(err instanceof Error ? err.message : t.login.error);
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +44,7 @@ export default function LoginPage() {
         className="min-h-screen flex items-center justify-center"
         style={{ background: 'var(--cream-50)' }}
       >
-        <p style={{ color: 'var(--text-secondary)' }}>Chargement...</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t.login.loading}</p>
       </div>
     );
   }
@@ -92,10 +94,10 @@ export default function LoginPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Bon retour parmi nous
+              {t.login.welcomeBack}
             </h1>
             <p style={{ color: 'var(--text-secondary)' }}>
-              Connectez-vous pour accéder à votre espace
+              {t.login.loginSubtitle}
             </p>
           </div>
 
@@ -110,21 +112,21 @@ export default function LoginPage() {
           >
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
-                label="Adresse email"
+                label={t.login.email}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="vous@exemple.com"
+                placeholder={t.login.emailPlaceholder}
                 required
                 autoComplete="email"
               />
 
               <Input
-                label="Mot de passe"
+                label={t.login.password}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Votre mot de passe"
+                placeholder={t.login.passwordPlaceholder}
                 required
                 autoComplete="current-password"
               />
@@ -148,19 +150,19 @@ export default function LoginPage() {
                 isLoading={isLoading}
                 size="lg"
               >
-                Se connecter
+                {t.login.signIn}
               </Button>
             </form>
 
             <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--border-soft)' }}>
               <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Pas encore de compte ?{' '}
+                {t.login.noAccount}{' '}
                 <Link
                   href="/signup"
                   className="font-medium hover:underline"
                   style={{ color: 'var(--matcha-600)' }}
                 >
-                  Créer un compte
+                  {t.login.createAccount}
                 </Link>
               </p>
             </div>
@@ -175,7 +177,7 @@ export default function LoginPage() {
             }}
           >
             <p className="text-sm" style={{ color: 'var(--matcha-700)' }}>
-              <strong>Mode démo :</strong> Créez un compte avec n&apos;importe quel email pour tester l&apos;application.
+              <strong>{t.login.demoMode}</strong> {t.login.demoHint}
             </p>
           </div>
         </div>

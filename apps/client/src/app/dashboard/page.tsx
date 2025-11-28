@@ -4,32 +4,34 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '../../components/AuthProvider';
+import { useLanguage } from '../../components/LanguageProvider';
 import { Button } from '../../components/ui/Button';
-
-// Mock data for demonstration
-const mockBiases = [
-  { name: 'Biais de confirmation', intensity: 75, description: 'Tendance à privilégier les informations qui confirment vos croyances.' },
-  { name: 'Effet de halo', intensity: 60, description: 'Tendance à juger positivement une personne sur un seul trait.' },
-  { name: 'Aversion à la perte', intensity: 45, description: 'Les pertes ont plus d\'impact émotionnel que les gains équivalents.' },
-  { name: 'Biais d\'ancrage', intensity: 55, description: 'Tendance à s\'appuyer sur la première information reçue.' },
-];
-
-const mockThinkingPatterns = [
-  { name: 'Analytique', value: 72, color: 'var(--matcha-500)' },
-  { name: 'Créatif', value: 58, color: 'var(--terra-400)' },
-  { name: 'Pragmatique', value: 85, color: 'var(--matcha-600)' },
-  { name: 'Émotionnel', value: 40, color: 'var(--terra-500)' },
-];
-
-const mockInsights = [
-  'Vous avez tendance à chercher la validation de vos décisions plutôt que des perspectives contradictoires.',
-  'Votre mode de pensée pragmatique vous aide à passer à l\'action, mais peut parfois limiter l\'exploration créative.',
-  'L\'aversion à la perte influence vos choix professionnels - considérez les opportunités manquées.',
-];
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, remainingAnalyses } = useAuthContext();
+  const { t, language } = useLanguage();
+
+  // Mock data for demonstration - uses translations
+  const mockBiases = [
+    { name: t.dashboard.confirmationBias, intensity: 75, description: t.dashboard.confirmationBiasDesc },
+    { name: t.dashboard.haloEffect, intensity: 60, description: t.dashboard.haloEffectDesc },
+    { name: t.dashboard.lossAversion, intensity: 45, description: t.dashboard.lossAversionDesc },
+    { name: t.dashboard.anchoringBias, intensity: 55, description: t.dashboard.anchoringBiasDesc },
+  ];
+
+  const mockThinkingPatterns = [
+    { name: t.dashboard.analytical, value: 72, color: 'var(--matcha-500)' },
+    { name: t.dashboard.creative, value: 58, color: 'var(--terra-400)' },
+    { name: t.dashboard.pragmatic, value: 85, color: 'var(--matcha-600)' },
+    { name: t.dashboard.emotional, value: 40, color: 'var(--terra-500)' },
+  ];
+
+  const mockInsights = [
+    t.dashboard.insight1,
+    t.dashboard.insight2,
+    t.dashboard.insight3,
+  ];
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -43,12 +45,14 @@ export default function DashboardPage() {
         className="min-h-screen flex items-center justify-center"
         style={{ background: 'var(--cream-50)' }}
       >
-        <p style={{ color: 'var(--text-secondary)' }}>Chargement...</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
       </div>
     );
   }
 
   const isPro = user?.plan === 'pro';
+  const memberSince = 'Nov 2024';
+  const lastAnalysis = language === 'en' ? `2 ${t.dashboard.daysAgo} ago` : `Il y a 2 ${t.dashboard.daysAgo}`;
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--cream-50)' }}>
@@ -75,10 +79,10 @@ export default function DashboardPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Bonjour, {user?.prenom}
+              {t.dashboard.hello}, {user?.prenom}
             </h1>
             <p style={{ color: 'var(--text-secondary)' }}>
-              Voici votre tableau de bord psychologique
+              {t.dashboard.subtitle}
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -90,11 +94,11 @@ export default function DashboardPage() {
                   color: 'var(--text-secondary)',
                 }}
               >
-                {remainingAnalyses} analyse{remainingAnalyses !== 1 ? 's' : ''} restante{remainingAnalyses !== 1 ? 's' : ''}
+                {remainingAnalyses} {remainingAnalyses !== 1 ? t.dashboard.analysesRemainingPlural : t.dashboard.analysesRemaining}
               </div>
             )}
             <span className={`matcha-badge ${isPro ? 'matcha-badge-pro' : 'matcha-badge-free'}`}>
-              {isPro ? 'Pro' : 'Gratuit'}
+              {isPro ? 'Pro' : (language === 'en' ? 'Free' : 'Gratuit')}
             </span>
           </div>
         </div>
@@ -117,13 +121,13 @@ export default function DashboardPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Votre profil
+              {t.dashboard.yourProfile}
             </h2>
 
             {/* Profile Completion */}
             <div className="mb-6">
               <div className="flex justify-between text-sm mb-2">
-                <span style={{ color: 'var(--text-secondary)' }}>Complétude du profil</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t.dashboard.profileCompletion}</span>
                 <span style={{ color: 'var(--matcha-600)' }}>68%</span>
               </div>
               <div className="matcha-progress">
@@ -134,23 +138,23 @@ export default function DashboardPage() {
             {/* Stats */}
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span style={{ color: 'var(--text-secondary)' }}>Analyses effectuées</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t.dashboard.analysesCompleted}</span>
                 <span style={{ color: 'var(--text-primary)' }} className="font-medium">12</span>
               </div>
               <div className="flex justify-between">
-                <span style={{ color: 'var(--text-secondary)' }}>Membre depuis</span>
-                <span style={{ color: 'var(--text-primary)' }} className="font-medium">Nov 2024</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t.dashboard.memberSince}</span>
+                <span style={{ color: 'var(--text-primary)' }} className="font-medium">{memberSince}</span>
               </div>
               <div className="flex justify-between">
-                <span style={{ color: 'var(--text-secondary)' }}>Dernière analyse</span>
-                <span style={{ color: 'var(--text-primary)' }} className="font-medium">Il y a 2 jours</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t.dashboard.lastAnalysis}</span>
+                <span style={{ color: 'var(--text-primary)' }} className="font-medium">{lastAnalysis}</span>
               </div>
             </div>
 
             {/* CTA */}
             <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--border-soft)' }}>
               <Button fullWidth>
-                Lancer une nouvelle analyse
+                {t.dashboard.startNewAnalysis}
               </Button>
             </div>
           </div>
@@ -173,7 +177,7 @@ export default function DashboardPage() {
                   color: 'var(--text-primary)',
                 }}
               >
-                Biais cognitifs détectés
+                {t.dashboard.cognitiveBiases}
               </h2>
 
               <div className="space-y-5">
@@ -215,7 +219,7 @@ export default function DashboardPage() {
                   color: 'var(--text-primary)',
                 }}
               >
-                Schémas de pensée
+                {t.dashboard.thinkingPatterns}
               </h2>
 
               <div className="grid grid-cols-2 gap-4">
@@ -271,7 +275,7 @@ export default function DashboardPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Insights personnalisés
+            {t.dashboard.personalizedInsights}
           </h2>
 
           <div className="grid md:grid-cols-3 gap-4">
@@ -309,7 +313,7 @@ export default function DashboardPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Évolution sur 30 jours
+              {t.dashboard.progressTitle}
             </h2>
             {!isPro && (
               <span className="matcha-badge matcha-badge-pro">Pro</span>
@@ -348,13 +352,13 @@ export default function DashboardPage() {
                     color: 'var(--text-primary)',
                   }}
                 >
-                  Débloquez le suivi de progression
+                  {t.dashboard.unlockProgress}
                 </h3>
                 <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                  Passez à Pro pour voir votre évolution dans le temps
+                  {t.dashboard.upgradeDesc}
                 </p>
                 <Link href="/pricing">
-                  <Button>Passer à Pro</Button>
+                  <Button>{t.dashboard.upgradeToPro}</Button>
                 </Link>
               </div>
             </div>

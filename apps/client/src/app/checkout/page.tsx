@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, Suspense } from 'react';
+import { useLanguage } from '../../components/LanguageProvider';
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t, language } = useLanguage();
   const _plan = searchParams.get('plan') || 'pro';
   void _plan; // Reserved for future use
   const billing = searchParams.get('billing') || 'monthly';
@@ -18,11 +20,31 @@ function CheckoutContent() {
     expiry: '',
     cvc: '',
     name: '',
-    country: 'France',
+    country: language === 'en' ? 'United States' : 'France',
   });
 
+  const currency = language === 'en' ? '$' : '€';
   const price = billing === 'yearly' ? 144 : 15;
-  const priceLabel = billing === 'yearly' ? '144€/an' : '15€/mois';
+  const priceLabel = billing === 'yearly' ? `144${currency}/${language === 'en' ? 'year' : 'an'}` : `15${currency}/${language === 'en' ? 'month' : 'mois'}`;
+  const savings = language === 'en' ? `$36` : `36€`;
+
+  const features = language === 'en'
+    ? [
+        'Unlimited analyses',
+        'Complete psychological profile',
+        'All cognitive biases detected',
+        'Monthly progress tracking',
+        'AI chat for deeper insights',
+        'Priority support',
+      ]
+    : [
+        'Analyses illimitées',
+        'Profil psychologique complet',
+        'Tous les biais cognitifs détectés',
+        'Suivi de progression mensuel',
+        'Chat IA pour approfondir',
+        'Support prioritaire',
+      ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -62,7 +84,7 @@ function CheckoutContent() {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Redirect to success page or dashboard
-    router.push('/tableau-de-bord?upgraded=true');
+    router.push('/dashboard?upgraded=true');
   };
 
   return (
@@ -91,7 +113,7 @@ function CheckoutContent() {
             className="text-sm hover:underline"
             style={{ color: 'var(--text-secondary)' }}
           >
-            Retour aux tarifs
+            {t.checkout.backToPricing}
           </Link>
         </div>
       </header>
@@ -115,7 +137,7 @@ function CheckoutContent() {
                   color: 'var(--text-primary)',
                 }}
               >
-                Récapitulatif de commande
+                {t.checkout.orderSummary}
               </h2>
 
               {/* Plan Details */}
@@ -138,10 +160,10 @@ function CheckoutContent() {
                       className="font-medium"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      Plan Transformation
+                      {t.checkout.planTransformation}
                     </h3>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {billing === 'yearly' ? 'Facturation annuelle' : 'Facturation mensuelle'}
+                      {billing === 'yearly' ? t.checkout.billedYearly : t.checkout.billedMonthly}
                     </p>
                   </div>
                   <div className="text-right">
@@ -153,7 +175,7 @@ function CheckoutContent() {
                     </p>
                     {billing === 'yearly' && (
                       <p className="text-xs" style={{ color: 'var(--matcha-600)' }}>
-                        Économisez 36€
+                        {t.checkout.save} {savings}
                       </p>
                     )}
                   </div>
@@ -166,17 +188,10 @@ function CheckoutContent() {
                   className="text-sm font-medium mb-3"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  Inclus dans votre abonnement :
+                  {t.checkout.includedInSub}
                 </p>
                 <ul className="space-y-2">
-                  {[
-                    'Analyses illimitées',
-                    'Profil psychologique complet',
-                    'Tous les biais cognitifs détectés',
-                    'Suivi de progression mensuel',
-                    'Chat IA pour approfondir',
-                    'Support prioritaire',
-                  ].map((feature, i) => (
+                  {features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm">
                       <span
                         className="w-1.5 h-1.5 rounded-full"
@@ -196,12 +211,12 @@ function CheckoutContent() {
 
               {/* Total */}
               <div className="flex justify-between items-center mb-4">
-                <span style={{ color: 'var(--text-secondary)' }}>Sous-total</span>
-                <span style={{ color: 'var(--text-primary)' }}>{price}€</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t.checkout.subtotal}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{price}{currency}</span>
               </div>
               <div className="flex justify-between items-center mb-4">
-                <span style={{ color: 'var(--text-secondary)' }}>TVA (20%)</span>
-                <span style={{ color: 'var(--text-primary)' }}>{(price * 0.2).toFixed(2)}€</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{t.checkout.vat}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{(price * 0.2).toFixed(2)}{currency}</span>
               </div>
               <div
                 className="h-px my-4"
@@ -212,13 +227,13 @@ function CheckoutContent() {
                   className="font-semibold"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  Total
+                  {t.checkout.total}
                 </span>
                 <span
                   className="text-xl font-bold"
                   style={{ color: 'var(--matcha-600)' }}
                 >
-                  {(price * 1.2).toFixed(2)}€
+                  {(price * 1.2).toFixed(2)}{currency}
                 </span>
               </div>
 
@@ -228,7 +243,7 @@ function CheckoutContent() {
                 style={{ background: 'var(--cream-100)' }}
               >
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  Garantie satisfait ou remboursé 30 jours
+                  {t.checkout.guarantee}
                 </p>
               </div>
             </div>
@@ -243,10 +258,10 @@ function CheckoutContent() {
                 color: 'var(--text-primary)',
               }}
             >
-              Finaliser votre abonnement
+              {t.checkout.finalizeSubscription}
             </h1>
             <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>
-              Paiement sécurisé par Stripe
+              {t.checkout.securePayment}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -257,7 +272,7 @@ function CheckoutContent() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  Adresse email
+                  {t.checkout.emailAddress}
                 </label>
                 <input
                   type="email"
@@ -266,7 +281,7 @@ function CheckoutContent() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  placeholder="vous@exemple.com"
+                  placeholder={language === 'en' ? 'you@example.com' : 'vous@exemple.com'}
                   className="w-full px-4 py-3 rounded-xl text-base transition-all outline-none"
                   style={{
                     background: 'var(--bg-card)',
@@ -282,7 +297,7 @@ function CheckoutContent() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  Informations de carte
+                  {t.checkout.cardInfo}
                 </label>
                 <div
                   className="rounded-xl overflow-hidden"
@@ -294,7 +309,7 @@ function CheckoutContent() {
                     value={formData.cardNumber}
                     onChange={handleInputChange}
                     required
-                    placeholder="1234 1234 1234 1234"
+                    placeholder={t.checkout.cardPlaceholder}
                     className="w-full px-4 py-3 text-base outline-none"
                     style={{
                       background: 'var(--bg-card)',
@@ -309,7 +324,7 @@ function CheckoutContent() {
                       value={formData.expiry}
                       onChange={handleInputChange}
                       required
-                      placeholder="MM/AA"
+                      placeholder="MM/YY"
                       className="w-1/2 px-4 py-3 text-base outline-none"
                       style={{
                         background: 'var(--bg-card)',
@@ -341,7 +356,7 @@ function CheckoutContent() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  Nom sur la carte
+                  {t.checkout.nameOnCard}
                 </label>
                 <input
                   type="text"
@@ -350,7 +365,7 @@ function CheckoutContent() {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  placeholder="Nom complet"
+                  placeholder={t.checkout.namePlaceholder}
                   className="w-full px-4 py-3 rounded-xl text-base transition-all outline-none"
                   style={{
                     background: 'var(--bg-card)',
@@ -367,7 +382,7 @@ function CheckoutContent() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  Pays
+                  {t.checkout.country}
                 </label>
                 <select
                   id="country"
@@ -381,11 +396,23 @@ function CheckoutContent() {
                     color: 'var(--text-primary)',
                   }}
                 >
-                  <option value="France">France</option>
-                  <option value="Belgique">Belgique</option>
-                  <option value="Suisse">Suisse</option>
-                  <option value="Canada">Canada</option>
-                  <option value="Luxembourg">Luxembourg</option>
+                  {language === 'en' ? (
+                    <>
+                      <option value="United States">United States</option>
+                      <option value="United Kingdom">United Kingdom</option>
+                      <option value="Canada">Canada</option>
+                      <option value="Australia">Australia</option>
+                      <option value="France">France</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="France">{t.checkout.france}</option>
+                      <option value="Belgique">{t.checkout.belgium}</option>
+                      <option value="Suisse">{t.checkout.switzerland}</option>
+                      <option value="Canada">{t.checkout.canada}</option>
+                      <option value="Luxembourg">{t.checkout.luxembourg}</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -405,10 +432,10 @@ function CheckoutContent() {
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Traitement en cours...
+                    {t.checkout.processing}
                   </span>
                 ) : (
-                  `Payer ${(price * 1.2).toFixed(2)}€`
+                  `${t.checkout.pay} ${(price * 1.2).toFixed(2)}${currency}`
                 )}
               </button>
 
@@ -425,18 +452,18 @@ function CheckoutContent() {
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
-                <span>Paiement sécurisé SSL 256-bit</span>
+                <span>{t.checkout.secureSSL}</span>
               </div>
 
               {/* Terms */}
               <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
-                En cliquant sur &quot;Payer&quot;, vous acceptez nos{' '}
+                {t.checkout.termsAccept}{' '}
                 <Link href="/terms" className="underline hover:no-underline">
-                  Conditions d&apos;utilisation
+                  {t.checkout.termsOfUse}
                 </Link>{' '}
-                et notre{' '}
+                {t.checkout.and}{' '}
                 <Link href="/privacy" className="underline hover:no-underline">
-                  Politique de confidentialité
+                  {t.checkout.privacyPolicy}
                 </Link>
                 .
               </p>
@@ -452,7 +479,7 @@ function CheckoutContent() {
           style={{ background: 'var(--cream-200)' }}
         >
           <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            Propulsé par
+            {t.checkout.poweredBy}
           </span>
           <span
             className="font-semibold"
