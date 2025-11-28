@@ -15,21 +15,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
 
   useEffect(() => {
-    // Check localStorage for saved preference
-    const saved = localStorage.getItem('matcha-language') as Language;
-    if (saved && (saved === 'en' || saved === 'fr')) {
-      setLanguageState(saved);
-    }
+    // Set language to English (only language supported)
+    setLanguageState('en');
+    // Update html lang attribute
+    document.documentElement.lang = 'en';
   }, []);
 
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('matcha-language', lang);
-    // Update html lang attribute
-    document.documentElement.lang = lang;
+    // Only English is supported, but keep function for compatibility
+    setLanguageState('en');
+    document.documentElement.lang = 'en';
   };
 
-  const t = translations[language];
+  const t = translations.en;
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
