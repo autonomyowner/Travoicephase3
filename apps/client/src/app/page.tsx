@@ -208,40 +208,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-16 px-4" style={{ background: 'var(--cream-100)' }}>
-        <div className="max-w-5xl mx-auto">
-          <p
-            className="text-center text-sm font-medium mb-8"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            {t.landing.socialProof}
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-12">
-            {[
-              { value: '4.9/5', label: t.landing.satisfaction },
-              { value: '+10,000', label: t.landing.analyses },
-              { value: '97%', label: t.landing.recommend },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <p
-                  className="text-2xl font-semibold"
-                  style={{
-                    fontFamily: 'var(--font-dm-serif), Georgia, serif',
-                    color: 'var(--matcha-600)',
-                  }}
-                >
-                  {stat.value}
-                </p>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* How It Works */}
       <section id="how-it-works" className="py-24 px-4">
         <div className="max-w-5xl mx-auto">
@@ -396,67 +362,6 @@ export default function LandingPage() {
                   </h3>
                   <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
                     {feature.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-24 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2
-              className="text-3xl md:text-4xl mb-4"
-              style={{
-                fontFamily: 'var(--font-dm-serif), Georgia, serif',
-                color: 'var(--text-primary)',
-              }}
-            >
-              {t.landing.testimonials}
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                quote: t.landing.testimonial1,
-                name: t.landing.testimonial1Name,
-                role: t.landing.testimonial1Role,
-              },
-              {
-                quote: t.landing.testimonial2,
-                name: t.landing.testimonial2Name,
-                role: t.landing.testimonial2Role,
-              },
-              {
-                quote: t.landing.testimonial3,
-                name: t.landing.testimonial3Name,
-                role: t.landing.testimonial3Role,
-              },
-            ].map((testimonial, i) => (
-              <div key={i} className="matcha-card p-6">
-                <p
-                  className="mb-6 text-lg"
-                  style={{
-                    color: 'var(--text-primary)',
-                    lineHeight: 1.7,
-                    fontStyle: 'italic',
-                  }}
-                >
-                  &ldquo;{testimonial.quote}&rdquo;
-                </p>
-                <div>
-                  <p
-                    className="font-semibold"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {testimonial.name}
-                  </p>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                    {testimonial.role}
                   </p>
                 </div>
               </div>
