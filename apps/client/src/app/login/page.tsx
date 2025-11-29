@@ -1,54 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { SignIn } from '@clerk/nextjs';
 import Link from 'next/link';
-import { useAuthContext } from '../../components/AuthProvider';
-import { useLanguage } from '../../components/LanguageProvider';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { login, isAuthenticated, isLoading: authLoading } = useAuthContext();
-  const { t } = useLanguage();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      router.replace('/dashboard');
-    }
-  }, [isAuthenticated, authLoading, router]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      await login(email, password);
-      router.push('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.login.error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (authLoading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--cream-50)' }}
-      >
-        <p style={{ color: 'var(--text-secondary)' }}>{t.login.loading}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen" style={{ background: 'var(--cream-50)' }}>
       {/* Decorative Background */}
@@ -94,91 +49,31 @@ export default function LoginPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              {t.login.welcomeBack}
+              Welcome Back
             </h1>
             <p style={{ color: 'var(--text-secondary)' }}>
-              {t.login.loginSubtitle}
+              Sign in to continue to your account
             </p>
           </div>
 
-          {/* Login Form */}
-          <div
-            className="rounded-3xl p-8"
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-soft)',
-              boxShadow: 'var(--shadow-lg)',
-            }}
-          >
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <Input
-                label={t.login.email}
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t.login.emailPlaceholder}
-                required
-                autoComplete="email"
-              />
-
-              <Input
-                label={t.login.password}
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t.login.passwordPlaceholder}
-                required
-                autoComplete="current-password"
-              />
-
-              {error && (
-                <div
-                  className="p-3 rounded-lg text-sm"
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    color: '#dc2626',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                  }}
-                >
-                  {error}
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                fullWidth
-                isLoading={isLoading}
-                size="lg"
-              >
-                {t.login.signIn}
-              </Button>
-            </form>
-
-            <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--border-soft)' }}>
-              <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {t.login.noAccount}{' '}
-                <Link
-                  href="/signup"
-                  className="font-medium hover:underline"
-                  style={{ color: 'var(--matcha-600)' }}
-                >
-                  {t.login.createAccount}
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          {/* Demo credentials hint */}
-          <div
-            className="mt-6 p-4 rounded-2xl text-center"
-            style={{
-              background: 'var(--matcha-100)',
-              border: '1px solid var(--matcha-200)',
-            }}
-          >
-            <p className="text-sm" style={{ color: 'var(--matcha-700)' }}>
-              <strong>{t.login.demoMode}</strong> {t.login.demoHint}
-            </p>
+          {/* Clerk SignIn Component */}
+          <div className="flex justify-center">
+            <SignIn
+              appearance={{
+                elements: {
+                  rootBox: 'w-full',
+                  card: 'rounded-3xl shadow-lg border border-[var(--border-soft)]',
+                  headerTitle: 'hidden',
+                  headerSubtitle: 'hidden',
+                  socialButtonsBlockButton: 'rounded-xl',
+                  formButtonPrimary: 'bg-[var(--matcha-500)] hover:bg-[var(--matcha-600)] rounded-xl',
+                  footerActionLink: 'text-[var(--matcha-600)] hover:text-[var(--matcha-700)]',
+                },
+              }}
+              routing="hash"
+              fallbackRedirectUrl="/dashboard"
+              signUpUrl="/signup"
+            />
           </div>
         </div>
       </div>

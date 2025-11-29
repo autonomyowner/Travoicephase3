@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, DM_Serif_Display } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import Header from "../components/Header";
-import { AuthProvider } from "../components/AuthProvider";
 import { LanguageProvider } from "../components/LanguageProvider";
 import "./globals.css";
 
@@ -55,14 +55,14 @@ export default function RootLayout({
           fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
         }}
       >
-        <LanguageProvider>
-          <AuthProvider>
+        <ClerkProvider>
+          <LanguageProvider>
             <div className="sticky top-0 z-50">
               <Header />
             </div>
             <main>{children}</main>
-          </AuthProvider>
-        </LanguageProvider>
+          </LanguageProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

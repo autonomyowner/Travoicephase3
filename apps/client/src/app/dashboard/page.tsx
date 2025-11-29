@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthContext } from '../../components/AuthProvider';
+import { useUser } from '@clerk/nextjs';
 import { useLanguage } from '../../components/LanguageProvider';
 import { Button } from '../../components/ui/Button';
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { user, isAuthenticated, isLoading, remainingAnalyses } = useAuthContext();
+  const { user, isLoaded } = useUser();
   const { t, language } = useLanguage();
 
   // Mock data for demonstration - uses translations
@@ -33,13 +30,7 @@ export default function DashboardPage() {
     t.dashboard.insight3,
   ];
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  if (isLoading || !isAuthenticated) {
+  if (!isLoaded) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -50,7 +41,9 @@ export default function DashboardPage() {
     );
   }
 
-  const isPro = user?.plan === 'pro';
+  const userName = user?.firstName || user?.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'User';
+  const isPro = false; // You can integrate with Clerk metadata or your own DB for this
+  const remainingAnalyses: number = 3; // Replace with actual logic
   const memberSince = 'Nov 2024';
   const lastAnalysis = language === 'en' ? `2 ${t.dashboard.daysAgo} ago` : `Il y a 2 ${t.dashboard.daysAgo}`;
 
@@ -79,7 +72,7 @@ export default function DashboardPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              {t.dashboard.hello}, {user?.prenom}
+              {t.dashboard.hello}, {userName}
             </h1>
             <p style={{ color: 'var(--text-secondary)' }}>
               {t.dashboard.subtitle}
