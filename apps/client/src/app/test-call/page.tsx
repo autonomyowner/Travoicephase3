@@ -7,6 +7,8 @@ import {
   Track,
   RemoteParticipant,
   RemoteTrackPublication,
+  DataPacket_Kind,
+  RemoteTrack,
 } from "livekit-client";
 
 type ConnectionState = "disconnected" | "connecting" | "connected";
@@ -14,28 +16,37 @@ type ConnectionState = "disconnected" | "connecting" | "connected";
 export default function TestCallPage() {
   const [roomName, setRoomName] = useState("");
   const [userName, setUserName] = useState("");
-  const [connectionState, setConnectionState] =
-    useState<ConnectionState>("disconnected");
+  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const [participants, setParticipants] = useState<string[]>([]);
   const [agentActive, setAgentActive] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [translationResult, setTranslationResult] = useState<{
     originalText: string;
     translatedText: string;
     sourceLang: string;
     targetLang: string;
   } | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [remoteAudioMuted, setRemoteAudioMuted] = useState(false);
 
   const roomRef = useRef<Room | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const remoteAudioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const translatedAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs((prev) => [...prev.slice(-50), `[${timestamp}] ${message}`]);
+  }, []);
+
+  // Mute/unmute remote audio elements (raw voice from other participants)
+  const setRemoteAudioVolume = useCallback((muted: boolean) => {
+    remoteAudioElementsRef.current.forEach((audio) => {
+      audio.volume = muted ? 0 : 1;
+    });
+    setRemoteAudioMuted(muted);
   }, []);
 
   const joinRoom = async () => {
@@ -70,6 +81,7 @@ export default function TestCallPage() {
         addLog("Disconnected from room");
         setConnectionState("disconnected");
         setParticipants([]);
+        remoteAudioElementsRef.current.clear();
       });
 
       room.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
@@ -80,27 +92,67 @@ export default function TestCallPage() {
       room.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
         addLog(`${participant.identity} left`);
         updateParticipants(room);
+        // Clean up their audio element
+        const audioEl = remoteAudioElementsRef.current.get(participant.identity);
+        if (audioEl) {
+          audioEl.remove();
+          remoteAudioElementsRef.current.delete(participant.identity);
+        }
       });
 
       room.on(
         RoomEvent.TrackSubscribed,
-        (track, _publication: RemoteTrackPublication, participant: RemoteParticipant) => {
+        (track: RemoteTrack, _publication: RemoteTrackPublication, participant: RemoteParticipant) => {
           if (track.kind === Track.Kind.Audio) {
             const audioElement = track.attach();
             audioElement.id = `audio-${participant.identity}`;
+            // If agent is active, mute the raw audio
+            audioElement.volume = agentActive ? 0 : 1;
             document.body.appendChild(audioElement);
+            remoteAudioElementsRef.current.set(participant.identity, audioElement);
+            addLog(`Subscribed to ${participant.identity}'s audio`);
           }
         }
       );
 
       room.on(
         RoomEvent.TrackUnsubscribed,
-        (track, _publication: RemoteTrackPublication, _participant: RemoteParticipant) => {
+        (track: RemoteTrack, _publication: RemoteTrackPublication, participant: RemoteParticipant) => {
           if (track.kind === Track.Kind.Audio) {
             track.detach().forEach((el) => el.remove());
+            remoteAudioElementsRef.current.delete(participant.identity);
           }
         }
       );
+
+      // Listen for translated audio data from other participants
+      room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
+        if (!participant || !agentActive) return;
+
+        try {
+          const decoder = new TextDecoder();
+          const data = JSON.parse(decoder.decode(payload));
+
+          if (data.type === "translated_audio") {
+            addLog(`Received translation from ${participant.identity}`);
+
+            // Update translation result display
+            setTranslationResult({
+              originalText: data.originalText,
+              translatedText: data.translatedText,
+              sourceLang: data.sourceLang,
+              targetLang: data.targetLang,
+            });
+
+            // Play the translated audio
+            const audio = new Audio(`data:audio/mpeg;base64,${data.audio}`);
+            translatedAudioRef.current = audio;
+            audio.play().catch(e => addLog(`Audio play error: ${e.message}`));
+          }
+        } catch (e) {
+          // Ignore non-JSON data
+        }
+      });
 
       await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL!, token);
 
@@ -134,19 +186,13 @@ export default function TestCallPage() {
     setConnectionState("disconnected");
     setParticipants([]);
     setAgentActive(false);
+    remoteAudioElementsRef.current.clear();
     addLog("Left the room");
   };
 
-  const toggleMute = async () => {
-    if (roomRef.current?.localParticipant) {
-      const newMuteState = !isMuted;
-      await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuteState);
-      setIsMuted(newMuteState);
-      addLog(newMuteState ? "Muted" : "Unmuted");
-    }
-  };
-
   const startRecording = async () => {
+    if (!agentActive) return;
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true }
@@ -205,6 +251,7 @@ export default function TestCallPage() {
       const result = await response.json();
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
+      // Update local display
       setTranslationResult({
         originalText: result.originalText,
         translatedText: result.translatedText,
@@ -212,11 +259,27 @@ export default function TestCallPage() {
         targetLang: result.targetLang,
       });
 
-      addLog(`[${elapsed}s] ${result.sourceLang.toUpperCase()}: "${result.originalText}"`);
-      addLog(`[${elapsed}s] ${result.targetLang.toUpperCase()}: "${result.translatedText}"`);
+      addLog(`[${elapsed}s] You said: "${result.originalText}"`);
+      addLog(`[${elapsed}s] Translated: "${result.translatedText}"`);
 
-      const audio = new Audio(`data:audio/mpeg;base64,${result.audio}`);
-      audio.play();
+      // Send translated audio to other participants via LiveKit data channel
+      if (roomRef.current) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify({
+          type: "translated_audio",
+          originalText: result.originalText,
+          translatedText: result.translatedText,
+          sourceLang: result.sourceLang,
+          targetLang: result.targetLang,
+          audio: result.audio,
+        }));
+
+        await roomRef.current.localParticipant.publishData(data, {
+          reliable: true,
+        });
+        addLog("Sent translation to other participants");
+      }
+
     } catch (error) {
       addLog(`Error: ${error instanceof Error ? error.message : "Failed"}`);
     } finally {
@@ -224,13 +287,25 @@ export default function TestCallPage() {
     }
   };
 
-  const toggleAgent = () => {
-    setAgentActive(!agentActive);
-    addLog(agentActive ? "Agent off" : "Agent activated");
-  };
+  const toggleAgent = useCallback(() => {
+    const newState = !agentActive;
+    setAgentActive(newState);
+
+    // When agent is active, mute raw remote audio (they'll hear translated version)
+    setRemoteAudioVolume(newState);
+
+    if (newState) {
+      addLog("Agent ON - Your friend will hear translated audio");
+    } else {
+      addLog("Agent OFF - Normal voice call");
+    }
+  }, [agentActive, setRemoteAudioVolume, addLog]);
 
   useEffect(() => {
-    return () => { if (roomRef.current) roomRef.current.disconnect(); };
+    return () => {
+      if (roomRef.current) roomRef.current.disconnect();
+      remoteAudioElementsRef.current.forEach(audio => audio.remove());
+    };
   }, []);
 
   // Audio wave bars for visualization
@@ -282,10 +357,6 @@ export default function TestCallPage() {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.2); opacity: 0.7; }
         }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
       `}</style>
 
       <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}>
@@ -321,10 +392,7 @@ export default function TestCallPage() {
                     value={roomName}
                     onChange={(e) => setRoomName(e.target.value)}
                     className="w-full px-5 py-4 rounded-xl text-white placeholder-white/40 outline-none transition-all"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.05)",
-                      border: "1px solid rgba(104, 166, 125, 0.3)",
-                    }}
+                    style={{ background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(104, 166, 125, 0.3)" }}
                   />
                   <input
                     type="text"
@@ -332,10 +400,7 @@ export default function TestCallPage() {
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     className="w-full px-5 py-4 rounded-xl text-white placeholder-white/40 outline-none transition-all"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.05)",
-                      border: "1px solid rgba(104, 166, 125, 0.3)",
-                    }}
+                    style={{ background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(104, 166, 125, 0.3)" }}
                   />
                   <button
                     onClick={joinRoom}
@@ -368,18 +433,14 @@ export default function TestCallPage() {
                 {/* English Speaker */}
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative">
-                    {/* Pulse rings */}
                     {(isRecording || isProcessing) && (
                       <>
                         <div className="absolute inset-0 rounded-full border-2"
                           style={{ borderColor: "rgba(104, 166, 125, 0.4)", animation: "pulseRing 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
                         <div className="absolute inset-0 rounded-full border-2"
                           style={{ borderColor: "rgba(104, 166, 125, 0.4)", animation: "pulseRing 3s cubic-bezier(0.4, 0, 0.6, 1) 0.4s infinite" }} />
-                        <div className="absolute inset-0 rounded-full border-2"
-                          style={{ borderColor: "rgba(104, 166, 125, 0.4)", animation: "pulseRing 3.5s cubic-bezier(0.4, 0, 0.6, 1) 0.8s infinite" }} />
                       </>
                     )}
-                    {/* Avatar */}
                     <div className="w-28 h-28 md:w-36 md:h-36 rounded-full flex items-center justify-center relative"
                       style={{
                         background: "linear-gradient(135deg, var(--matcha-400) 0%, var(--matcha-600) 100%)",
@@ -396,18 +457,15 @@ export default function TestCallPage() {
                       )}
                     </div>
                   </div>
-                  {/* Language badge */}
                   <div className="px-4 py-1.5 rounded-full backdrop-blur-sm"
                     style={{ background: "rgba(104, 166, 125, 0.15)", border: "1px solid rgba(104, 166, 125, 0.3)" }}>
                     <span className="text-sm font-bold tracking-wider" style={{ color: "var(--matcha-300)" }}>EN</span>
                   </div>
-                  {/* Audio wave */}
                   <AudioWave color="matcha" isActive={isRecording} />
                 </div>
 
                 {/* Center - Translation Flow */}
                 <div className="flex flex-col items-center gap-6 flex-1 max-w-sm">
-                  {/* Connection line */}
                   <div className="relative w-full h-0.5 hidden md:block">
                     <div className="absolute inset-0 rounded-full overflow-hidden">
                       <div className="absolute inset-0" style={{
@@ -425,19 +483,16 @@ export default function TestCallPage() {
                     )}
                   </div>
 
-                  {/* Status card */}
                   <div className="w-full px-6 py-5 rounded-2xl backdrop-blur-md"
                     style={{ background: "rgba(15, 23, 42, 0.6)", border: "1px solid rgba(104, 166, 125, 0.2)", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)" }}>
                     <div className="flex flex-col gap-4">
-                      {/* Live indicator */}
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-2 h-2 rounded-full"
                           style={{ background: agentActive ? "#10b981" : "#6b7280", boxShadow: agentActive ? "0 0 12px #10b981" : "none", animation: agentActive ? "pulseDot 1.5s ease-in-out infinite" : "none" }} />
                         <span className="text-sm font-medium text-white/90">
-                          {agentActive ? "Live Translation" : "Agent Standby"}
+                          {agentActive ? "Translation Active" : "Normal Call"}
                         </span>
                       </div>
-                      {/* Language direction */}
                       <div className="flex items-center justify-center gap-3">
                         <span className="text-xs font-mono" style={{ color: "var(--matcha-300)" }}>EN</span>
                         <svg width="60" height="12" viewBox="0 0 60 12" className="flex-shrink-0">
@@ -451,15 +506,11 @@ export default function TestCallPage() {
                         </svg>
                         <span className="text-xs font-mono" style={{ color: "var(--terra-300)" }}>AR</span>
                       </div>
-                      {/* Feature badges */}
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        <span className="px-2 py-0.5 rounded text-[10px]" style={{ background: "rgba(104, 166, 125, 0.2)", color: "var(--matcha-300)", border: "1px solid rgba(104, 166, 125, 0.3)" }}>
-                          Voice Clone
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px]" style={{ background: "rgba(198, 123, 94, 0.2)", color: "var(--terra-300)", border: "1px solid rgba(198, 123, 94, 0.3)" }}>
-                          Context-Aware
-                        </span>
-                      </div>
+                      {agentActive && (
+                        <div className="text-center text-xs text-white/50">
+                          Raw voice muted • Translations only
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -502,20 +553,8 @@ export default function TestCallPage() {
               {/* Control Buttons */}
               <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
                 <button
-                  onClick={toggleMute}
-                  className="px-6 py-3 rounded-xl font-medium transition-all hover:scale-105"
-                  style={{
-                    background: isMuted ? "rgba(239, 68, 68, 0.2)" : "rgba(104, 166, 125, 0.2)",
-                    border: `1px solid ${isMuted ? "rgba(239, 68, 68, 0.4)" : "rgba(104, 166, 125, 0.4)"}`,
-                    color: isMuted ? "#fca5a5" : "var(--matcha-300)"
-                  }}
-                >
-                  {isMuted ? "Unmute" : "Mute"}
-                </button>
-
-                <button
                   onClick={toggleAgent}
-                  className="px-6 py-3 rounded-xl font-medium transition-all hover:scale-105"
+                  className="px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105"
                   style={{
                     background: agentActive ? "linear-gradient(135deg, var(--matcha-500), var(--terra-400))" : "rgba(255, 255, 255, 0.1)",
                     border: agentActive ? "none" : "1px solid rgba(255, 255, 255, 0.2)",
@@ -523,19 +562,19 @@ export default function TestCallPage() {
                     boxShadow: agentActive ? "0 4px 20px rgba(104, 166, 125, 0.4)" : "none"
                   }}
                 >
-                  {agentActive ? "Agent Active" : "Start Agent"}
+                  {agentActive ? "Translation ON" : "Enable Translation"}
                 </button>
 
                 <button
                   onClick={leaveRoom}
-                  className="px-6 py-3 rounded-xl font-medium transition-all hover:scale-105"
+                  className="px-6 py-4 rounded-xl font-medium transition-all hover:scale-105"
                   style={{
                     background: "rgba(239, 68, 68, 0.1)",
                     border: "1px solid rgba(239, 68, 68, 0.3)",
                     color: "#fca5a5"
                   }}
                 >
-                  Leave
+                  Leave Room
                 </button>
               </div>
 
@@ -543,13 +582,13 @@ export default function TestCallPage() {
               <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
                 {participants.map((p) => (
                   <span key={p} className="px-3 py-1 rounded-full text-sm"
-                    style={{ background: "rgba(255, 255, 255, 0.1)", color: "white/80" }}>
+                    style={{ background: "rgba(255, 255, 255, 0.1)", color: "rgba(255,255,255,0.8)" }}>
                     {p} {p === userName && "(you)"}
                   </span>
                 ))}
               </div>
 
-              {/* Translation Agent Panel */}
+              {/* Push-to-Talk Panel (only when agent is active) */}
               {agentActive && (
                 <div className="max-w-lg mx-auto mb-8 animate-fade-in">
                   <div className="rounded-3xl p-6 backdrop-blur-xl"
@@ -558,10 +597,9 @@ export default function TestCallPage() {
                       border: "2px solid rgba(104, 166, 125, 0.3)"
                     }}>
                     <p className="text-white/60 text-sm text-center mb-6">
-                      Hold to speak in English or Arabic
+                      Hold to speak - your friend will hear the translation
                     </p>
 
-                    {/* Big push-to-talk button */}
                     <div className="flex justify-center mb-6">
                       <button
                         onMouseDown={!isProcessing ? startRecording : undefined}
@@ -599,10 +637,9 @@ export default function TestCallPage() {
                     </div>
 
                     <p className="text-center text-sm" style={{ color: isProcessing ? "#fbbf24" : isRecording ? "#fca5a5" : "var(--matcha-300)" }}>
-                      {isProcessing ? "Translating..." : isRecording ? "Recording..." : "Hold to speak"}
+                      {isProcessing ? "Translating & sending..." : isRecording ? "Recording..." : "Hold to speak"}
                     </p>
 
-                    {/* Translation result */}
                     {translationResult && (
                       <div className="mt-6 space-y-3">
                         <div className="p-4 rounded-xl" style={{ background: "rgba(104, 166, 125, 0.1)", border: "1px solid rgba(104, 166, 125, 0.2)" }}>
