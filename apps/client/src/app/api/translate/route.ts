@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Deepgram STT
-async function speechToText(audioBuffer: Uint8Array): Promise<string> {
-  console.log("Sending audio to Deepgram, buffer size:", audioBuffer.length);
+async function speechToText(audioBlob: Blob): Promise<string> {
+  console.log("Sending audio to Deepgram, blob size:", audioBlob.size);
 
   const response = await fetch(
     "https://api.deepgram.com/v1/listen?model=nova-2&detect_language=true&punctuate=true",
@@ -12,7 +12,7 @@ async function speechToText(audioBuffer: Uint8Array): Promise<string> {
         Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
         "Content-Type": "audio/webm",
       },
-      body: audioBuffer,
+      body: audioBlob,
     }
   );
 
@@ -133,12 +133,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert File to Uint8Array
-    const arrayBuffer = await audioFile.arrayBuffer();
-    const audioBuffer = new Uint8Array(arrayBuffer);
+    // Convert File to Blob for Deepgram
+    const audioBlob = new Blob([await audioFile.arrayBuffer()], { type: "audio/webm" });
 
     // Step 1: Speech to Text with language detection
-    const sttResult = await speechToText(audioBuffer);
+    const sttResult = await speechToText(audioBlob);
     const { transcript, detectedLanguage } = JSON.parse(sttResult);
 
     if (!transcript) {
