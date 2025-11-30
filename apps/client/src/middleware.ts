@@ -7,6 +7,9 @@ const isPublicRoute = createRouteMatcher([
   '/pricing(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/test-call(.*)',
+  '/api/livekit-token(.*)',
+  '/api/translate(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {

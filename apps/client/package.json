@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.35.5",
+    "@livekit/components-react": "^2.9.16",
+    "livekit-client": "^2.16.0",
+    "livekit-server-sdk": "^2.14.2",
     "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0"
