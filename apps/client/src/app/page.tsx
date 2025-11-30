@@ -107,7 +107,7 @@ export default function LandingPage() {
               {t.landing.ctaStart}
             </Link>
             <Link
-              href="#how-it-works"
+              href="/test-call"
               className="matcha-btn matcha-btn-secondary text-base px-8 py-4"
             >
               {t.landing.ctaHow}
@@ -599,7 +599,7 @@ export default function LandingPage() {
               {t.landing.createFreeAccount}
             </Link>
             <Link
-              href="/pricing"
+              href="/test-call"
               className="matcha-btn matcha-btn-secondary text-base px-8 py-4"
             >
               {t.landing.seePricing}
