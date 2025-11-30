@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Deepgram STT
-async function speechToText(audioBuffer: Buffer): Promise<string> {
+async function speechToText(audioBuffer: Uint8Array): Promise<string> {
   console.log("Sending audio to Deepgram, buffer size:", audioBuffer.length);
 
   const response = await fetch(
@@ -77,7 +77,7 @@ async function translateText(
 async function textToSpeech(
   text: string,
   targetLang: string
-): Promise<Buffer> {
+): Promise<string> {
   // Use different voice IDs for different languages
   const voiceIds: Record<string, string> = {
     en: "21m00Tcm4TlvDq8ikWAM", // Rachel - English
@@ -111,7 +111,13 @@ async function textToSpeech(
   }
 
   const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  // Convert to base64 string
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 export async function POST(req: NextRequest) {
@@ -127,9 +133,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert File to Buffer
+    // Convert File to Uint8Array
     const arrayBuffer = await audioFile.arrayBuffer();
-    const audioBuffer = Buffer.from(arrayBuffer);
+    const audioBuffer = new Uint8Array(arrayBuffer);
 
     // Step 1: Speech to Text with language detection
     const sttResult = await speechToText(audioBuffer);
@@ -155,7 +161,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Step 3: Text to Speech
-    const audioOutput = await textToSpeech(translatedText, actualTargetLang);
+    const audioBase64 = await textToSpeech(translatedText, actualTargetLang);
 
     // Return audio as base64 along with metadata
     return NextResponse.json({
@@ -163,7 +169,7 @@ export async function POST(req: NextRequest) {
       sourceLang,
       translatedText,
       targetLang: actualTargetLang,
-      audio: audioOutput.toString("base64"),
+      audio: audioBase64,
     });
   } catch (error) {
     console.error("Translation error:", error);
