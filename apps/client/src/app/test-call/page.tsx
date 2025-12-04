@@ -7,8 +7,9 @@ import {
   Track,
   RemoteParticipant,
   RemoteTrackPublication,
-  DataPacket_Kind,
   RemoteTrack,
+  LocalAudioTrack,
+  TrackPublishOptions,
 } from "livekit-client";
 
 type ConnectionState = "disconnected" | "connecting" | "connected";
@@ -35,6 +36,8 @@ export default function TestCallPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const remoteAudioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const translatedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const translatedTrackRef = useRef<LocalAudioTrack | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const agentActiveRef = useRef(false);
 
   const addLog = useCallback((message: string) => {
@@ -103,15 +106,28 @@ export default function TestCallPage() {
 
       room.on(
         RoomEvent.TrackSubscribed,
-        (track: RemoteTrack, _publication: RemoteTrackPublication, participant: RemoteParticipant) => {
+        (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
           if (track.kind === Track.Kind.Audio) {
+            const isTranslatedTrack = publication.trackName === "translated_audio";
             const audioElement = track.attach();
-            audioElement.id = `audio-${participant.identity}`;
-            // If agent is active, mute the raw audio
-            audioElement.volume = agentActive ? 0 : 1;
-            document.body.appendChild(audioElement);
-            remoteAudioElementsRef.current.set(participant.identity, audioElement);
-            addLog(`Subscribed to ${participant.identity}'s audio`);
+
+            if (isTranslatedTrack) {
+              // This is a translated audio track - always play it when agent is active
+              audioElement.id = `translated-audio-${participant.identity}`;
+              audioElement.volume = agentActiveRef.current ? 1 : 0;
+              document.body.appendChild(audioElement);
+              if (agentActiveRef.current) {
+                addLog(`Playing translation from ${participant.identity}`);
+              }
+            } else {
+              // This is raw microphone audio
+              audioElement.id = `audio-${participant.identity}`;
+              // If agent is active, mute the raw audio
+              audioElement.volume = agentActiveRef.current ? 0 : 1;
+              document.body.appendChild(audioElement);
+              remoteAudioElementsRef.current.set(participant.identity, audioElement);
+              addLog(`Subscribed to ${participant.identity}'s audio`);
+            }
           }
         }
       );
@@ -126,7 +142,7 @@ export default function TestCallPage() {
         }
       );
 
-      // Listen for translated audio data from other participants
+      // Listen for translation metadata from other participants
       room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
         if (!participant || !agentActiveRef.current) return;
 
@@ -134,8 +150,20 @@ export default function TestCallPage() {
           const decoder = new TextDecoder();
           const data = JSON.parse(decoder.decode(payload));
 
-          if (data.type === "translated_audio") {
+          if (data.type === "translation_metadata") {
+            // Metadata only - audio comes via audio track
             addLog(`Received translation from ${participant.identity}`);
+
+            // Update translation result display
+            setTranslationResult({
+              originalText: data.originalText,
+              translatedText: data.translatedText,
+              sourceLang: data.sourceLang,
+              targetLang: data.targetLang,
+            });
+          } else if (data.type === "translated_audio") {
+            // Fallback: full audio in data channel (for smaller files)
+            addLog(`Received translation from ${participant.identity} (fallback)`);
 
             // Update translation result display
             setTranslationResult({
@@ -181,12 +209,22 @@ export default function TestCallPage() {
 
   const leaveRoom = async () => {
     if (roomRef.current) {
+      // Unpublish translated track if exists
+      if (translatedTrackRef.current) {
+        try {
+          await roomRef.current.localParticipant.unpublishTrack(translatedTrackRef.current);
+        } catch {
+          // Ignore
+        }
+        translatedTrackRef.current = null;
+      }
       await roomRef.current.disconnect();
       roomRef.current = null;
     }
     setConnectionState("disconnected");
     setParticipants([]);
     setAgentActive(false);
+    agentActiveRef.current = false;
     remoteAudioElementsRef.current.clear();
     addLog("Left the room");
   };
@@ -235,6 +273,37 @@ export default function TestCallPage() {
     }
   };
 
+  // Helper function to convert base64 audio to MediaStreamTrack
+  const createAudioTrackFromBase64 = async (base64Audio: string): Promise<MediaStreamTrack> => {
+    // Create audio context if not exists
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+    const audioContext = audioContextRef.current;
+
+    // Decode base64 to ArrayBuffer
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // Decode audio data
+    const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
+
+    // Create a MediaStreamDestination to get a MediaStreamTrack
+    const destination = audioContext.createMediaStreamDestination();
+
+    // Create a buffer source and connect it
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(destination);
+    source.start();
+
+    // Return the audio track from the stream
+    return destination.stream.getAudioTracks()[0];
+  };
+
   const sendForTranslation = async (audioBlob: Blob) => {
     setIsProcessing(true);
     const startTime = Date.now();
@@ -263,22 +332,68 @@ export default function TestCallPage() {
       addLog(`[${elapsed}s] You said: "${result.originalText}"`);
       addLog(`[${elapsed}s] Translated: "${result.translatedText}"`);
 
-      // Send translated audio to other participants via LiveKit data channel
-      if (roomRef.current) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify({
-          type: "translated_audio",
-          originalText: result.originalText,
-          translatedText: result.translatedText,
-          sourceLang: result.sourceLang,
-          targetLang: result.targetLang,
-          audio: result.audio,
-        }));
+      // Send translated audio to other participants via LiveKit audio track
+      if (roomRef.current && result.audio) {
+        try {
+          // First, send metadata via data channel (small payload, no size limit issues)
+          const encoder = new TextEncoder();
+          const metadata = encoder.encode(JSON.stringify({
+            type: "translation_metadata",
+            originalText: result.originalText,
+            translatedText: result.translatedText,
+            sourceLang: result.sourceLang,
+            targetLang: result.targetLang,
+          }));
+          await roomRef.current.localParticipant.publishData(metadata, { reliable: true });
 
-        await roomRef.current.localParticipant.publishData(data, {
-          reliable: true,
-        });
-        addLog("Sent translation to other participants");
+          // Create audio track from base64 and publish it
+          const mediaTrack = await createAudioTrackFromBase64(result.audio);
+          const localAudioTrack = new LocalAudioTrack(mediaTrack, undefined, true);
+
+          // Unpublish previous translated track if exists
+          if (translatedTrackRef.current) {
+            await roomRef.current.localParticipant.unpublishTrack(translatedTrackRef.current);
+          }
+
+          // Publish the new translated audio track with a specific name
+          const publishOptions: TrackPublishOptions = {
+            name: "translated_audio",
+            source: Track.Source.Unknown,
+          };
+          await roomRef.current.localParticipant.publishTrack(localAudioTrack, publishOptions);
+          translatedTrackRef.current = localAudioTrack;
+
+          addLog("Sent translation via audio track");
+
+          // Auto-unpublish after the audio plays (estimate duration from buffer)
+          setTimeout(async () => {
+            if (translatedTrackRef.current && roomRef.current) {
+              try {
+                await roomRef.current.localParticipant.unpublishTrack(translatedTrackRef.current);
+                translatedTrackRef.current = null;
+              } catch {
+                // Track may already be unpublished
+              }
+            }
+          }, 10000); // 10 seconds max
+
+        } catch (trackError) {
+          addLog(`Track publish error: ${trackError instanceof Error ? trackError.message : "Failed"}`);
+          // Fallback: try data channel for smaller messages
+          if (result.audio.length < 60000) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(JSON.stringify({
+              type: "translated_audio",
+              originalText: result.originalText,
+              translatedText: result.translatedText,
+              sourceLang: result.sourceLang,
+              targetLang: result.targetLang,
+              audio: result.audio,
+            }));
+            await roomRef.current.localParticipant.publishData(data, { reliable: true });
+            addLog("Sent translation via data channel (fallback)");
+          }
+        }
       }
 
     } catch (error) {
@@ -307,6 +422,9 @@ export default function TestCallPage() {
     return () => {
       if (roomRef.current) roomRef.current.disconnect();
       remoteAudioElementsRef.current.forEach(audio => audio.remove());
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, []);
 
