@@ -35,6 +35,7 @@ export default function TestCallPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const remoteAudioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const translatedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const agentActiveRef = useRef(false);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -127,7 +128,7 @@ export default function TestCallPage() {
 
       // Listen for translated audio data from other participants
       room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
-        if (!participant || !agentActive) return;
+        if (!participant || !agentActiveRef.current) return;
 
         try {
           const decoder = new TextDecoder();
@@ -290,6 +291,7 @@ export default function TestCallPage() {
   const toggleAgent = useCallback(() => {
     const newState = !agentActive;
     setAgentActive(newState);
+    agentActiveRef.current = newState; // Keep ref in sync for event handlers
 
     // When agent is active, mute raw remote audio (they'll hear translated version)
     setRemoteAudioVolume(newState);
