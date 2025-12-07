@@ -200,9 +200,11 @@ export default function TranslationRoom() {
   };
 
   useEffect(() => {
+    const audioElements = remoteAudioElementsRef.current;
+    const room = roomRef.current;
     return () => {
-      if (roomRef.current) roomRef.current.disconnect();
-      remoteAudioElementsRef.current.forEach(audio => audio.remove());
+      if (room) room.disconnect();
+      audioElements.forEach(audio => audio.remove());
     };
   }, []);
 

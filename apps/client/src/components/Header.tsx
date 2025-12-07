@@ -8,7 +8,7 @@ import { useLanguage } from './LanguageProvider';
 
 export default function Header() {
   const router = useRouter();
-  const { user, isLoaded } = useUser();
+  const { user } = useUser();
   const { signOut } = useClerk();
   const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

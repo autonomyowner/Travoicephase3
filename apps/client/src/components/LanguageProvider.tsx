@@ -21,7 +21,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = 'en';
   }, []);
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = (_lang: Language) => {
     // Only English is supported, but keep function for compatibility
     setLanguageState('en');
     document.documentElement.lang = 'en';
