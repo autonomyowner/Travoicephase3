@@ -2,29 +2,6 @@
 # https://render.com/docs/infrastructure-as-code
 
 services:
-  # Next.js Client Application
-  - type: web
-    name: travoices-client
-    runtime: node
-    plan: starter
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_LIVEKIT_URL
-        sync: false
-      - key: LIVEKIT_API_KEY
-        sync: false
-      - key: LIVEKIT_API_SECRET
-        sync: false
-      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-        sync: false
-      - key: CLERK_SECRET_KEY
-        sync: false
-    healthCheckPath: /
-    autoDeploy: true
-
   # Python LiveKit Translation Agent (Background Worker)
   - type: worker
     name: travoices-agent
