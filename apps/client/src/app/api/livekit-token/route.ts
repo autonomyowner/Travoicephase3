@@ -54,9 +54,7 @@ export async function POST(req: NextRequest) {
 
       // Explicitly dispatch agent to the room
       const agentDispatch = new AgentDispatchClient(httpUrl, apiKey, apiSecret);
-      await agentDispatch.createDispatch(roomName, {
-        agentName: "", // Empty string dispatches any available agent
-      }).catch((err) => {
+      await agentDispatch.createDispatch(roomName, "").catch((err) => {
         console.log("Agent dispatch:", err.message || err);
       });
 
