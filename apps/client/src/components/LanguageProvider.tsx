@@ -21,6 +21,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = 'en';
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const setLanguage = (_lang: Language) => {
     // Only English is supported, but keep function for compatibility
     setLanguageState('en');

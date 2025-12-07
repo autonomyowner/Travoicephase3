@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const audioFile = formData.get("audio") as File;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _targetLang = (formData.get("targetLang") as string) || "en";
 
     if (!audioFile) {
