@@ -1,0 +1,55 @@
+# Render Infrastructure Configuration for TRAVoices
+# https://render.com/docs/infrastructure-as-code
+
+services:
+  # Next.js Client Application
+  - type: web
+    name: travoices-client
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+    healthCheckPath: /
+    autoDeploy: true
+
+  # Python LiveKit Translation Agent (Background Worker)
+  - type: worker
+    name: travoices-agent
+    runtime: python
+    plan: starter
+    rootDir: apps/agent
+    buildCommand: pip install -r requirements.txt
+    startCommand: python agent.py start
+    envVars:
+      # LiveKit Cloud Credentials
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      # Deepgram (STT)
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      # OpenRouter (Translation)
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-4o-mini
+      # ElevenLabs (TTS)
+      - key: ELEVENLABS_API_KEY
+        sync: false
+    autoDeploy: true
