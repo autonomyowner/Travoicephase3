@@ -8,6 +8,7 @@ import logging
 import os
 import base64
 import json
+import struct
 from dotenv import load_dotenv
 
 from livekit import rtc
@@ -38,14 +39,13 @@ logger = logging.getLogger("travoices")
 
 CONFIG = {
     # Speech detection
-    "SPEECH_THRESHOLD": 200,          # RMS threshold to detect speech (lower = more sensitive)
-    "SILENCE_FRAMES_END": 75,         # Frames of silence before processing (~1.5s at 50fps)
-    "MIN_AUDIO_BYTES": 48000,         # Minimum audio size (~1s at 48kHz)
-    "MAX_AUDIO_BYTES": 960000,        # Maximum audio size (~10s at 48kHz)
+    "SPEECH_THRESHOLD": 150,          # RMS threshold (lowered for better detection)
+    "SILENCE_FRAMES_END": 60,         # Frames of silence before processing (~1.2s)
+    "MIN_AUDIO_BYTES": 32000,         # Minimum audio size
+    "MAX_AUDIO_BYTES": 960000,        # Maximum audio size (~10s)
 
     # Deepgram
     "DEEPGRAM_MODEL": "nova-2",
-    "DEEPGRAM_SAMPLE_RATE": "48000",
 
     # OpenRouter
     "OPENROUTER_MODEL": os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini"),
@@ -72,16 +72,55 @@ RULES:
 
 
 # =============================================================================
+# AUDIO PROCESSING HELPERS
+# =============================================================================
+
+def convert_to_mono_16bit(audio_data: bytes, num_channels: int) -> bytes:
+    """Convert audio to mono 16-bit PCM."""
+    if num_channels == 1:
+        return audio_data
+
+    # Stereo to mono conversion
+    samples = []
+    for i in range(0, len(audio_data), 4):  # 4 bytes per stereo sample (2 channels * 2 bytes)
+        if i + 4 <= len(audio_data):
+            left = struct.unpack('<h', audio_data[i:i+2])[0]
+            right = struct.unpack('<h', audio_data[i+2:i+4])[0]
+            mono = (left + right) // 2
+            samples.append(struct.pack('<h', mono))
+
+    return b''.join(samples)
+
+
+def calculate_rms(audio_data: bytes) -> float:
+    """Calculate RMS of audio data."""
+    if len(audio_data) < 2:
+        return 0
+
+    try:
+        num_samples = len(audio_data) // 2
+        samples = struct.unpack(f'<{num_samples}h', audio_data[:num_samples * 2])
+        if not samples:
+            return 0
+        rms = (sum(s * s for s in samples) / len(samples)) ** 0.5
+        return rms
+    except Exception:
+        return 0
+
+
+# =============================================================================
 # API FUNCTIONS
 # =============================================================================
 
-async def transcribe_audio(audio_data: bytes) -> tuple[str, str]:
+async def transcribe_audio(audio_data: bytes, sample_rate: int) -> tuple[str, str]:
     """Transcribe audio using Deepgram. Returns (transcript, language)."""
     api_key = os.getenv("DEEPGRAM_API_KEY")
 
     if not api_key:
         logger.error("DEEPGRAM_API_KEY not set")
         return "", "en"
+
+    logger.info(f"Sending {len(audio_data)} bytes to Deepgram at {sample_rate}Hz")
 
     try:
         async with httpx.AsyncClient() as client:
@@ -92,7 +131,8 @@ async def transcribe_audio(audio_data: bytes) -> tuple[str, str]:
                     "detect_language": "true",
                     "punctuate": "true",
                     "encoding": "linear16",
-                    "sample_rate": CONFIG["DEEPGRAM_SAMPLE_RATE"],
+                    "sample_rate": str(sample_rate),
+                    "channels": "1",
                 },
                 headers={
                     "Authorization": f"Token {api_key}",
@@ -103,14 +143,17 @@ async def transcribe_audio(audio_data: bytes) -> tuple[str, str]:
             )
 
             if response.status_code != 200:
-                logger.error(f"Deepgram error {response.status_code}: {response.text[:200]}")
+                logger.error(f"Deepgram error {response.status_code}: {response.text[:500]}")
                 return "", "en"
 
             data = response.json()
             channel = data.get("results", {}).get("channels", [{}])[0]
             alternative = channel.get("alternatives", [{}])[0]
             transcript = alternative.get("transcript", "").strip()
+            confidence = alternative.get("confidence", 0)
             detected_lang = channel.get("detected_language", "en")
+
+            logger.info(f"Deepgram response: '{transcript}' (confidence: {confidence}, lang: {detected_lang})")
 
             # Map language codes
             if detected_lang in ["en", "en-US", "en-GB", "en-AU"]:
@@ -235,9 +278,6 @@ async def entrypoint(ctx: JobContext):
     participant = await ctx.wait_for_participant()
     logger.info(f"Translating for: {participant.identity}")
 
-    # Get VAD
-    vad = ctx.proc.userdata.get("vad") or silero.VAD.load()
-
     # Track active audio streams
     active_streams = set()
 
@@ -279,23 +319,30 @@ async def process_audio_stream(ctx: JobContext, audio_stream: rtc.AudioStream, p
     is_speaking = False
     silence_count = 0
     frame_count = 0
-    processing_lock = asyncio.Lock()
+    sample_rate = 48000  # Default, will be updated from frame
+    num_channels = 1
 
     async for event in audio_stream:
         frame = event.frame
         frame_count += 1
-        audio_data = bytes(frame.data)
 
-        # Calculate RMS for speech detection
-        try:
-            samples = [int.from_bytes(audio_data[i:i+2], 'little', signed=True)
-                       for i in range(0, min(len(audio_data), 1920), 2)]
-            rms = (sum(s*s for s in samples) / max(len(samples), 1)) ** 0.5 if samples else 0
-        except:
-            rms = 0
+        # Get frame properties
+        sample_rate = frame.sample_rate
+        num_channels = frame.num_channels
+
+        # Get raw audio data and convert to mono
+        raw_data = bytes(frame.data)
+        mono_data = convert_to_mono_16bit(raw_data, num_channels)
+
+        # Calculate RMS
+        rms = calculate_rms(mono_data)
+
+        # Log first frame info
+        if frame_count == 1:
+            logger.info(f"Audio format: {sample_rate}Hz, {num_channels} channels, frame size: {len(raw_data)} bytes")
 
         # Log periodically
-        if frame_count % 200 == 0:
+        if frame_count % 100 == 0:
             status = "SPEAKING" if is_speaking else "silent"
             logger.debug(f"Frame {frame_count}: RMS={rms:.0f}, buffer={len(audio_buffer)}, {status}")
 
@@ -305,28 +352,26 @@ async def process_audio_stream(ctx: JobContext, audio_stream: rtc.AudioStream, p
                 logger.info(f"Speech started (RMS={rms:.0f})")
             is_speaking = True
             silence_count = 0
-            audio_buffer.extend(audio_data)
+            audio_buffer.extend(mono_data)
 
             # Prevent buffer from growing too large
             if len(audio_buffer) > CONFIG["MAX_AUDIO_BYTES"]:
                 logger.info("Max buffer reached, processing...")
-                async with processing_lock:
-                    audio_copy = bytes(audio_buffer)
-                    audio_buffer = bytearray()
-                    is_speaking = False
-                    asyncio.create_task(process_speech(ctx, audio_copy, participant_id))
+                audio_copy = bytes(audio_buffer)
+                audio_buffer = bytearray()
+                is_speaking = False
+                asyncio.create_task(process_speech(ctx, audio_copy, participant_id, sample_rate))
 
         elif is_speaking:
             silence_count += 1
-            audio_buffer.extend(audio_data)
+            audio_buffer.extend(mono_data)
 
             # End of speech detected
             if silence_count >= CONFIG["SILENCE_FRAMES_END"]:
                 if len(audio_buffer) >= CONFIG["MIN_AUDIO_BYTES"]:
                     logger.info(f"Speech ended ({len(audio_buffer)} bytes)")
-                    async with processing_lock:
-                        audio_copy = bytes(audio_buffer)
-                        asyncio.create_task(process_speech(ctx, audio_copy, participant_id))
+                    audio_copy = bytes(audio_buffer)
+                    asyncio.create_task(process_speech(ctx, audio_copy, participant_id, sample_rate))
                 else:
                     logger.debug(f"Audio too short ({len(audio_buffer)} bytes), skipping")
 
@@ -335,15 +380,15 @@ async def process_audio_stream(ctx: JobContext, audio_stream: rtc.AudioStream, p
                 silence_count = 0
 
 
-async def process_speech(ctx: JobContext, audio_data: bytes, participant_id: str):
+async def process_speech(ctx: JobContext, audio_data: bytes, participant_id: str, sample_rate: int):
     """Full translation pipeline: STT → Translate → TTS → Send."""
     logger.info(f"=== Translating {len(audio_data)//1000}KB from {participant_id} ===")
 
     try:
         # Step 1: Speech-to-Text
-        transcript, source_lang = await transcribe_audio(audio_data)
+        transcript, source_lang = await transcribe_audio(audio_data, sample_rate)
         if not transcript:
-            logger.info("No speech detected")
+            logger.info("No speech detected in transcript")
             return
 
         logger.info(f"[STT] ({source_lang}) {transcript}")
