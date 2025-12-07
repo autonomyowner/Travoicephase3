@@ -1,4 +1,4 @@
-import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
+import { AccessToken, RoomServiceClient, AgentDispatchClient } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const httpUrl = livekitUrl.replace("wss://", "https://");
+
     // Create token for the participant
     const token = new AccessToken(apiKey, apiSecret, {
       identity: participantName,
@@ -39,22 +41,27 @@ export async function POST(req: NextRequest) {
 
     const jwt = await token.toJwt();
 
-    // Request agent dispatch to this room
+    // Create room and dispatch agent
     try {
-      const httpUrl = livekitUrl.replace("wss://", "https://");
       const roomService = new RoomServiceClient(httpUrl, apiKey, apiSecret);
 
-      // Create room if it doesn't exist (this ensures agent can be dispatched)
+      // Create room if it doesn't exist
       await roomService.createRoom({
         name: roomName,
-        emptyTimeout: 300, // 5 minutes
+        emptyTimeout: 300,
         maxParticipants: 10,
-      }).catch(() => {
-        // Room might already exist, that's fine
+      }).catch(() => {});
+
+      // Explicitly dispatch agent to the room
+      const agentDispatch = new AgentDispatchClient(httpUrl, apiKey, apiSecret);
+      await agentDispatch.createDispatch(roomName, {
+        agentName: "", // Empty string dispatches any available agent
+      }).catch((err) => {
+        console.log("Agent dispatch:", err.message || err);
       });
 
-    } catch (dispatchError) {
-      console.log("Room service call (non-critical):", dispatchError);
+    } catch (err) {
+      console.log("Room/agent setup (non-critical):", err);
     }
 
     return NextResponse.json({ token: jwt });
