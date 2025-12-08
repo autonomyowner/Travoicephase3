@@ -102,11 +102,17 @@ export default function CallPage() {
         roomRef.current = room;
 
         // Connection events
-        room.on(RoomEvent.Connected, () => {
+        room.on(RoomEvent.Connected, async () => {
           setConnectionState("connected");
           setCallStartTime(new Date());
           updateParticipants(room);
           checkForAgent(room);
+          // Enable microphone AFTER connection is established
+          try {
+            await room.localParticipant.setMicrophoneEnabled(true);
+          } catch (e) {
+            console.error("Failed to enable microphone:", e);
+          }
         });
 
         room.on(RoomEvent.Disconnected, () => {
@@ -206,7 +212,6 @@ export default function CallPage() {
         });
 
         await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL!, callData.token);
-        await room.localParticipant.setMicrophoneEnabled(true);
 
       } catch (error) {
         console.error("Connection error:", error);
