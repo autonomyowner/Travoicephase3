@@ -107,12 +107,25 @@ export default function CallPage() {
           setCallStartTime(new Date());
           updateParticipants(room);
           checkForAgent(room);
-          // Enable microphone AFTER connection is established
-          try {
-            await room.localParticipant.setMicrophoneEnabled(true);
-          } catch (e) {
-            console.error("Failed to enable microphone:", e);
-          }
+          // Enable microphone AFTER connection is fully established
+          // Add small delay to ensure engine is ready
+          setTimeout(async () => {
+            try {
+              await room.localParticipant.setMicrophoneEnabled(true);
+              console.log("Microphone enabled successfully");
+            } catch (e) {
+              console.error("Failed to enable microphone:", e);
+              // Retry once after another delay
+              setTimeout(async () => {
+                try {
+                  await room.localParticipant.setMicrophoneEnabled(true);
+                  console.log("Microphone enabled on retry");
+                } catch (e2) {
+                  console.error("Microphone retry failed:", e2);
+                }
+              }, 1000);
+            }
+          }, 500);
         });
 
         room.on(RoomEvent.Disconnected, () => {
