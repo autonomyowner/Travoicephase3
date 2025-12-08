@@ -9,10 +9,11 @@ import {
   RemoteParticipant,
   RemoteTrackPublication,
   RemoteTrack,
+  ConnectionState as LKConnectionState,
 } from "livekit-client";
 import { Button } from "@/components/ui/Button";
 
-type ConnectionState = "loading" | "connecting" | "connected" | "disconnected";
+type UIConnectionState = "loading" | "connecting" | "connected" | "disconnected";
 
 interface CallData {
   token: string;
@@ -51,7 +52,8 @@ export default function CallPage() {
   const params = useParams();
   const code = params.code as string;
 
-  const [connectionState, setConnectionState] = useState<ConnectionState>("loading");
+  const [connectionState, setConnectionState] = useState<UIConnectionState>("loading");
+  const hasConnectedRef = useRef(false);
   const [callData, setCallData] = useState<CallData | null>(null);
   const [participants, setParticipants] = useState<ParticipantDisplay[]>([]);
   const [agentConnected, setAgentConnected] = useState(false);
@@ -90,58 +92,45 @@ export default function CallPage() {
     }
   }, [code, router]);
 
-  // Connect to room when callData is available
+  // Connect to room when callData is available - ONLY ONCE
   useEffect(() => {
-    if (!callData) return;
+    if (!callData || hasConnectedRef.current) return;
+    hasConnectedRef.current = true;
 
     const connectToRoom = async () => {
       setConnectionState("connecting");
 
       try {
-        const room = new Room();
+        const room = new Room({
+          adaptiveStream: true,
+          dynacast: true,
+        });
         roomRef.current = room;
 
         // Connection events
         room.on(RoomEvent.Connected, async () => {
+          console.log("Room connected, state:", room.state);
           setConnectionState("connected");
           setCallStartTime(new Date());
-          updateParticipants(room);
-          checkForAgent(room);
-          // Enable microphone AFTER connection is fully established
-          // Add small delay to ensure engine is ready
-          setTimeout(async () => {
-            try {
-              await room.localParticipant.setMicrophoneEnabled(true);
-              console.log("Microphone enabled successfully");
-            } catch (e) {
-              console.error("Failed to enable microphone:", e);
-              // Retry once after another delay
-              setTimeout(async () => {
-                try {
-                  await room.localParticipant.setMicrophoneEnabled(true);
-                  console.log("Microphone enabled on retry");
-                } catch (e2) {
-                  console.error("Microphone retry failed:", e2);
-                }
-              }, 1000);
-            }
-          }, 500);
+          updateParticipantsFromRoom(room);
+          checkForAgentInRoom(room);
         });
 
         room.on(RoomEvent.Disconnected, () => {
           setConnectionState("disconnected");
+          hasConnectedRef.current = false;
         });
 
         // Participant events
         room.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
-          updateParticipants(room);
+          updateParticipantsFromRoom(room);
           if (isAgentParticipant(participant.identity)) {
             setAgentConnected(true);
           }
         });
 
         room.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
-          updateParticipants(room);
+          updateParticipantsFromRoom(room);
           const audioEl = remoteAudioElementsRef.current.get(participant.identity);
           if (audioEl) {
             audioEl.remove();
@@ -224,11 +213,32 @@ export default function CallPage() {
           setIsListening(userSpeaking && agentConnected);
         });
 
+        // Connect to room
         await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL!, callData.token);
+        console.log("Connected to LiveKit room");
+
+        // Wait for connection to be fully ready, then enable microphone
+        const enableMic = async () => {
+          if (room.state === LKConnectionState.Connected) {
+            try {
+              await room.localParticipant.setMicrophoneEnabled(true);
+              console.log("Microphone enabled successfully");
+            } catch (e) {
+              console.error("Failed to enable microphone:", e);
+            }
+          } else {
+            console.log("Waiting for connection, state:", room.state);
+            setTimeout(enableMic, 500);
+          }
+        };
+
+        // Small delay to ensure engine is ready
+        setTimeout(enableMic, 300);
 
       } catch (error) {
         console.error("Connection error:", error);
         setConnectionState("disconnected");
+        hasConnectedRef.current = false;
       }
     };
 
@@ -239,13 +249,13 @@ export default function CallPage() {
         roomRef.current.disconnect();
       }
     };
-  }, [callData, agentConnected, addTranslation]);
+  }, [callData]);
 
   const isAgentParticipant = (identity: string): boolean => {
     return identity.startsWith("agent-") || identity.toLowerCase().includes("agent");
   };
 
-  const checkForAgent = (room: Room) => {
+  const checkForAgentInRoom = (room: Room) => {
     for (const p of room.remoteParticipants.values()) {
       if (isAgentParticipant(p.identity)) {
         setAgentConnected(true);
@@ -254,7 +264,7 @@ export default function CallPage() {
     }
   };
 
-  const updateParticipants = (room: Room) => {
+  const updateParticipantsFromRoom = (room: Room) => {
     const parseMetadata = (metadata: string | undefined) => {
       if (!metadata) return {};
       try {
