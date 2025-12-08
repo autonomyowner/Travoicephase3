@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma, generateUniqueRoomCode } from "@/lib/db";
 
+interface RoomWithCount {
+  id: string;
+  code: string;
+  name: string;
+  createdAt: Date;
+  lastActiveAt: Date | null;
+  _count: {
+    participants: number;
+  };
+}
+
 // POST /api/rooms - Create a new room (auth required)
 export async function POST(req: NextRequest) {
   try {
@@ -95,7 +106,7 @@ export async function GET() {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     return NextResponse.json({
-      rooms: rooms.map((room) => ({
+      rooms: rooms.map((room: RoomWithCount) => ({
         id: room.id,
         code: room.code,
         name: room.name,
