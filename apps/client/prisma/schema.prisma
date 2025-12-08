@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Room {
+  id              String   @id @default(cuid())
+  code            String   @unique @db.VarChar(6)
+  name            String
+  creatorId       String   // Clerk user ID
+  isActive        Boolean  @default(true)
+  maxParticipants Int      @default(2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastActiveAt    DateTime?
+
+  participants    RoomParticipant[]
+  calls           CallHistory[]
+
+  @@index([code])
+  @@index([creatorId])
+}
+
+model RoomParticipant {
+  id             String    @id @default(cuid())
+  roomId         String
+  odentity       String    // Clerk user ID or guest ID (guest_xxx)
+  displayName    String
+  speaksLanguage String    @db.VarChar(5) // "en" | "ar"
+  hearsLanguage  String    @db.VarChar(5) // "en" | "ar"
+  isGuest        Boolean   @default(false)
+  joinedAt       DateTime  @default(now())
+  leftAt         DateTime?
+  isActive       Boolean   @default(true)
+
+  room           Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([odentity])
+}
+
+model CallHistory {
+  id               String   @id @default(cuid())
+  roomId           String?
+  roomCode         String
+  roomName         String
+  startedAt        DateTime
+  endedAt          DateTime
+  durationSeconds  Int
+  participantCount Int
+  createdAt        DateTime @default(now())
+
+  room             Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  userCalls        UserCallHistory[]
+
+  @@index([roomId])
+}
+
+model UserCallHistory {
+  id            String   @id @default(cuid())
+  odentity      String   // Clerk user ID (renamed from userId for consistency)
+  callId        String
+  displayName   String
+  spokeLanguage String   @db.VarChar(5)
+  heardLanguage String   @db.VarChar(5)
+  createdAt     DateTime @default(now())
+
+  call          CallHistory @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([odentity])
+  @@index([callId])
+}
