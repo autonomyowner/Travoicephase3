@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 
+interface UserCallWithRelation {
+  id: string;
+  odentity: string;
+  callId: string;
+  displayName: string;
+  spokeLanguage: string;
+  heardLanguage: string;
+  createdAt: Date;
+  call: {
+    id: string;
+    roomCode: string;
+    roomName: string;
+    startedAt: Date;
+    endedAt: Date;
+    durationSeconds: number;
+    participantCount: number;
+  };
+}
+
 // GET /api/calls - Get user's call history (auth required)
 export async function GET(req: NextRequest) {
   try {
@@ -18,7 +37,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    const userCalls = await prisma.userCallHistory.findMany({
+    const userCalls: UserCallWithRelation[] = await prisma.userCallHistory.findMany({
       where: { odentity: userId },
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -43,7 +62,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      calls: userCalls.map((uc) => ({
+      calls: userCalls.map((uc: UserCallWithRelation) => ({
         id: uc.call.id,
         roomCode: uc.call.roomCode,
         roomName: uc.call.roomName,
