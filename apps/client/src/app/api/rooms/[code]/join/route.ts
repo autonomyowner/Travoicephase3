@@ -183,7 +183,7 @@ export async function POST(
 
       // Dispatch translation agent to room
       const agentDispatch = new AgentDispatchClient(httpUrl, apiKey, apiSecret);
-      await agentDispatch.createDispatch(liveKitRoomName, "").catch((err) => {
+      await agentDispatch.createDispatch(liveKitRoomName, "travoices-translator").catch((err) => {
         console.log("Agent dispatch:", err.message || err);
       });
 
