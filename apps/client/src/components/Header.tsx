@@ -5,13 +5,19 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useClerk, SignedIn, SignedOut } from '@clerk/nextjs';
 import { useLanguage } from './LanguageProvider';
+import { Language } from '@/lib/translations';
 
 export default function Header() {
   const router = useRouter();
   const { user } = useUser();
   const { signOut } = useClerk();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLanguageToggle = () => {
+    const newLang: Language = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -70,6 +76,17 @@ export default function Header() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Language Switcher */}
+            <button
+              onClick={handleLanguageToggle}
+              className="text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors hover:bg-[var(--bg-elevated)]"
+              style={{
+                color: 'var(--text-secondary)',
+                borderColor: 'var(--border-soft)',
+              }}
+            >
+              {language === 'en' ? 'العربية' : 'English'}
+            </button>
             <SignedIn>
               <span
                 className="text-sm"
@@ -154,6 +171,15 @@ export default function Header() {
                   {t.header.dashboard}
                 </Link>
               </SignedIn>
+
+              {/* Mobile Language Switcher */}
+              <button
+                onClick={handleLanguageToggle}
+                className="text-sm font-medium py-2 w-full text-start"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {language === 'en' ? 'العربية' : 'English'}
+              </button>
 
               <div className="pt-3 border-t border-[var(--border-soft)]">
                 <SignedIn>

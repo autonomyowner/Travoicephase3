@@ -7,31 +7,45 @@ interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: Translations;
+  isRTL: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const RTL_LANGUAGES: Language[] = ['ar'];
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
+  const [isRTL, setIsRTL] = useState(false);
 
   useEffect(() => {
-    // Set language to English (only language supported)
-    setLanguageState('en');
-    // Update html lang attribute
-    document.documentElement.lang = 'en';
+    // Load saved language from localStorage
+    const savedLanguage = localStorage.getItem('language') as Language | null;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ar')) {
+      setLanguageState(savedLanguage);
+      updateDocumentDirection(savedLanguage);
+    } else {
+      updateDocumentDirection('en');
+    }
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const setLanguage = (_lang: Language) => {
-    // Only English is supported, but keep function for compatibility
-    setLanguageState('en');
-    document.documentElement.lang = 'en';
+  const updateDocumentDirection = (lang: Language) => {
+    const rtl = RTL_LANGUAGES.includes(lang);
+    setIsRTL(rtl);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = rtl ? 'rtl' : 'ltr';
   };
 
-  const t = translations.en;
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('language', lang);
+    updateDocumentDirection(lang);
+  };
+
+  const t = translations[language];
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, isRTL }}>
       {children}
     </LanguageContext.Provider>
   );
