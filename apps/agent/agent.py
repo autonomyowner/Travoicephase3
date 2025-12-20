@@ -24,8 +24,6 @@ from livekit.agents import (
     Agent,
     AgentSession,
     RunContext,
-    RoomInputOptions,
-    RoomOutputOptions,
     JobContext,
     JobProcess,
     WorkerOptions,
@@ -366,20 +364,10 @@ class MultiParticipantTranslator:
             allow_interruptions=False,  # Don't interrupt translations
         )
 
-        # Start the session
-        # Note: We'll handle audio input switching via active speaker detection
+        # Start the session with room connection
         await session.start(
             agent=agent,
             room=self.ctx.room,
-            room_input=RoomInputOptions(
-                enabled=True,
-                # Will switch participant based on active speaker
-            ),
-            room_output=RoomOutputOptions(
-                enabled=True,
-                transcription_enabled=False,
-                # Track will be named with participant identity
-            ),
         )
 
         self.sessions[listener.identity] = session
