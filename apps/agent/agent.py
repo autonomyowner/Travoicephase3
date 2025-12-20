@@ -47,13 +47,13 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 # CONFIGURATION
 # =============================================================================
 
-LANG_NAMES = {"en": "English", "ar": "Arabic"}
+LANG_NAMES = {"en": "English", "fr": "French"}
 
 # Cartesia voices - Sonic model
 # See: https://play.cartesia.ai/voices
 CARTESIA_VOICES = {
     "en": "79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
-    "ar": "79a125e8-cd45-4c13-8a67-188112f4dd22",  # Using same for now (Cartesia has limited Arabic)
+    "fr": "a8a1eb38-5f15-4c1d-8722-7ac0f329f1f3",  # French female
 }
 
 # =============================================================================
@@ -276,8 +276,9 @@ class MultiParticipantTranslator:
         self.ctx.room.on("active_speakers_changed", self._on_active_speakers_changed)
         self.ctx.room.on("track_subscribed", self._on_track_subscribed)
 
-        # Process existing participants
-        for participant in self.ctx.room.remote_participants.values():
+        # Process existing participants (copy to list to avoid dict mutation during iteration)
+        existing_participants = list(self.ctx.room.remote_participants.values())
+        for participant in existing_participants:
             if not self._is_agent(participant.identity):
                 await self._add_participant(participant)
 
