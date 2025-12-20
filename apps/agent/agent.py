@@ -30,7 +30,7 @@ from livekit.agents import (
     cli,
     llm,
 )
-from livekit.plugins import deepgram, silero, openai
+from livekit.plugins import deepgram, silero, cartesia, openai
 
 load_dotenv()
 
@@ -49,11 +49,12 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 LANG_NAMES = {"en": "English", "fr": "French"}
 
-# OpenAI TTS voices - multilingual support
-# All voices can speak any language natively
-OPENAI_VOICES = {
-    "en": "nova",     # Natural female voice
-    "fr": "shimmer",  # Expressive female voice
+# Cartesia voices - Sonic multilingual model
+# See: https://play.cartesia.ai/voices
+# These are multilingual voices that support both English and French
+CARTESIA_VOICES = {
+    "en": "79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
+    "fr": "c2ac25f9-ecc4-4f56-9095-651354df60c0",  # Default multilingual voice
 }
 
 # =============================================================================
@@ -328,13 +329,17 @@ class MultiParticipantTranslator:
         """Create a translation session that outputs to this specific listener."""
         logger.info(f"Creating session for {listener.display_name} (hears: {listener.hears_language})")
 
-        # Get voice for target language - OpenAI voices are multilingual
-        voice = OPENAI_VOICES.get(listener.hears_language, OPENAI_VOICES["en"])
+        # Get voice for target language
+        voice = os.getenv(f"CARTESIA_VOICE_{listener.hears_language.upper()}")
+        if not voice:
+            voice = CARTESIA_VOICES.get(listener.hears_language, CARTESIA_VOICES["en"])
 
-        # Create TTS - OpenAI TTS with excellent multilingual support
-        tts = openai.TTS(
-            model="tts-1",  # Use tts-1 for lower latency (tts-1-hd for quality)
+        # Create TTS - Cartesia Sonic multilingual for French support
+        # Use "sonic" model which supports multiple languages including French
+        tts = cartesia.TTS(
             voice=voice,
+            model="sonic",
+            language=listener.hears_language,
         )
 
         # Create LLM for translation (via OpenRouter)
