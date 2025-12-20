@@ -1,9 +1,9 @@
-# LiveKit Agent Framework v1.x
+# LiveKit Agent Framework v1.x with plugins
+# Using extras syntax for better plugin installation
+livekit-agents[silero,deepgram,cartesia,openai]>=1.0.0,<2.0.0
+
+# Core LiveKit SDK
 livekit>=0.18.0
-livekit-agents>=1.3.0
-livekit-plugins-silero>=1.0.0
-livekit-plugins-deepgram>=1.0.0
-livekit-plugins-openai>=1.0.0
 
 # HTTP client for API calls
 httpx>=0.27.0
