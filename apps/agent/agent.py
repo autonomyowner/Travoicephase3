@@ -30,7 +30,7 @@ from livekit.agents import (
     cli,
     llm,
 )
-from livekit.plugins import deepgram, silero, cartesia, openai
+from livekit.plugins import deepgram, silero, openai
 
 load_dotenv()
 
@@ -49,11 +49,11 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 LANG_NAMES = {"en": "English", "fr": "French"}
 
-# Cartesia voices - Sonic model
-# See: https://play.cartesia.ai/voices
-CARTESIA_VOICES = {
-    "en": "79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
-    "fr": "a8a1eb38-5f15-4c1d-8722-7ac0f329f1f3",  # French female
+# OpenAI TTS voices - multilingual support
+# All voices can speak any language natively
+OPENAI_VOICES = {
+    "en": "nova",     # Natural female voice
+    "fr": "shimmer",  # Expressive female voice
 }
 
 # =============================================================================
@@ -328,16 +328,13 @@ class MultiParticipantTranslator:
         """Create a translation session that outputs to this specific listener."""
         logger.info(f"Creating session for {listener.display_name} (hears: {listener.hears_language})")
 
-        # Get voice for target language
-        voice = os.getenv(f"CARTESIA_VOICE_{listener.hears_language.upper()}")
-        if not voice:
-            voice = CARTESIA_VOICES.get(listener.hears_language, CARTESIA_VOICES["en"])
+        # Get voice for target language - OpenAI voices are multilingual
+        voice = OPENAI_VOICES.get(listener.hears_language, OPENAI_VOICES["en"])
 
-        # Create TTS - Cartesia Sonic is extremely fast (~50ms latency)
-        tts = cartesia.TTS(
+        # Create TTS - OpenAI TTS with excellent multilingual support
+        tts = openai.TTS(
+            model="tts-1",  # Use tts-1 for lower latency (tts-1-hd for quality)
             voice=voice,
-            model="sonic-2",
-            language=listener.hears_language,
         )
 
         # Create LLM for translation (via OpenRouter)
