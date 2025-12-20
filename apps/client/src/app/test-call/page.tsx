@@ -14,6 +14,7 @@ type ConnectionState = "disconnected" | "connecting" | "connected";
 
 interface Translation {
   id: string;
+  speakerName: string;
   original: string;
   translated: string;
   sourceLang: string;
@@ -24,22 +25,25 @@ interface Translation {
 export default function TranslationRoom() {
   const [roomName, setRoomName] = useState("");
   const [userName, setUserName] = useState("");
+  const [speaksLanguage, setSpeaksLanguage] = useState("en");
+  const [hearsLanguage, setHearsLanguage] = useState("fr");
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const [participants, setParticipants] = useState<string[]>([]);
   const [agentConnected, setAgentConnected] = useState(false);
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [isListening, setIsListening] = useState(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
 
   const roomRef = useRef<Room | null>(null);
   const remoteAudioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
-  const audioChunkBufferRef = useRef<Map<string, { chunks: string[], totalChunks: number }>>(new Map());
 
   const addTranslation = useCallback((t: Omit<Translation, "id" | "timestamp">) => {
     setTranslations(prev => [{
       ...t,
       id: Date.now().toString(),
       timestamp: new Date(),
-    }, ...prev].slice(0, 10)); // Keep last 10
+    }, ...prev].slice(0, 15));
+    setTranslationError(null);
   }, []);
 
   const joinRoom = async () => {
@@ -48,16 +52,30 @@ export default function TranslationRoom() {
     setConnectionState("connecting");
 
     try {
+      // Build metadata for language preferences
+      const metadata = JSON.stringify({
+        displayName: userName.trim(),
+        speaksLanguage,
+        hearsLanguage,
+      });
+
       const tokenRes = await fetch("/api/livekit-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomName: roomName.trim(), participantName: userName.trim() }),
+        body: JSON.stringify({
+          roomName: roomName.trim(),
+          participantName: userName.trim(),
+          metadata,
+        }),
       });
 
       if (!tokenRes.ok) throw new Error("Failed to get token");
       const { token } = await tokenRes.json();
 
-      const room = new Room();
+      const room = new Room({
+        adaptiveStream: true,
+        dynacast: true,
+      });
       roomRef.current = room;
 
       // Connection events
@@ -85,76 +103,88 @@ export default function TranslationRoom() {
 
       room.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
         updateParticipants(room);
-        const audioEl = remoteAudioElementsRef.current.get(participant.identity);
-        if (audioEl) {
-          audioEl.remove();
-          remoteAudioElementsRef.current.delete(participant.identity);
-        }
+        // Clean up any audio elements for this participant
+        remoteAudioElementsRef.current.forEach((el, key) => {
+          if (key.startsWith(participant.identity)) {
+            el.remove();
+            remoteAudioElementsRef.current.delete(key);
+          }
+        });
         if (isAgentParticipant(participant.identity)) {
           setAgentConnected(false);
         }
       });
 
-      // Track events
+      // Track events - ONLY subscribe to agent's translated audio tracks
       room.on(RoomEvent.TrackSubscribed,
-        (track: RemoteTrack, _pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+        (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
           if (track.kind === Track.Kind.Audio) {
+            // ONLY attach audio for agent participants
+            // Users will NEVER hear each other's original audio
+            if (!isAgentParticipant(participant.identity)) {
+              console.log(`Ignoring audio track from non-agent: ${participant.identity}`);
+              return;
+            }
+
+            // Check if this track is for us (translated_for_{our_identity})
+            const trackName = pub.trackName || "";
+            const myIdentity = userName.trim();
+
+            // If track has a name, verify it's for us
+            if (trackName && !trackName.includes(myIdentity)) {
+              console.log(`Ignoring audio track not for us: ${trackName}`);
+              return;
+            }
+
+            console.log(`Attaching translated audio track: ${trackName || "agent-audio"}`);
             const audioElement = track.attach();
-            audioElement.id = `audio-${participant.identity}`;
+            audioElement.id = `audio-${participant.identity}-${trackName}`;
+
             document.body.appendChild(audioElement);
-            remoteAudioElementsRef.current.set(participant.identity, audioElement);
+            remoteAudioElementsRef.current.set(`${participant.identity}-${trackName}`, audioElement);
           }
         }
       );
 
       room.on(RoomEvent.TrackUnsubscribed,
-        (track: RemoteTrack, _pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+        (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
           if (track.kind === Track.Kind.Audio) {
             track.detach().forEach((el) => el.remove());
-            remoteAudioElementsRef.current.delete(participant.identity);
+            const trackName = pub.trackName || "";
+            remoteAudioElementsRef.current.delete(`${participant.identity}-${trackName}`);
           }
         }
       );
 
-      // Data channel for translations
+      // Data channel for translation TEXT (audio comes via track)
       room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
         try {
           const data = JSON.parse(new TextDecoder().decode(payload));
 
-          if (data.type === "translation_start") {
+          if (data.type === "translation_text") {
+            // Text-only message - audio comes via agent's published track
             setIsListening(false);
             addTranslation({
+              speakerName: data.speakerName || "Unknown",
               original: data.originalText,
               translated: data.translatedText,
               sourceLang: data.sourceLang,
               targetLang: data.targetLang,
             });
-
-            audioChunkBufferRef.current.set(data.messageId, {
-              chunks: new Array(data.totalChunks).fill(""),
-              totalChunks: data.totalChunks,
-            });
-
-          } else if (data.type === "translation_chunk") {
-            const buffer = audioChunkBufferRef.current.get(data.messageId);
-            if (buffer) {
-              buffer.chunks[data.chunkIndex] = data.audio;
-              const received = buffer.chunks.filter((c: string) => c !== "").length;
-
-              if (received === buffer.totalChunks) {
-                const fullAudio = buffer.chunks.join("");
-                const audio = new Audio(`data:audio/mpeg;base64,${fullAudio}`);
-                audio.play().catch(() => {});
-                audioChunkBufferRef.current.delete(data.messageId);
-              }
-            }
+          } else if (data.type === "translation_error") {
+            // Handle translation errors silently
+            console.error("Translation error:", data.error);
+            setTranslationError(data.error);
+            setTimeout(() => setTranslationError(null), 5000);
           }
-        } catch {}
+        } catch (e) {
+          console.error("Failed to parse data channel message:", e);
+        }
       });
 
       // Audio activity indicator
       room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
-        const userSpeaking = speakers.some(s => s.identity === userName);
+        const userSpeaking = speakers.some(s => s.identity === userName.trim());
         setIsListening(userSpeaking && agentConnected);
       });
 
@@ -196,6 +226,7 @@ export default function TranslationRoom() {
     setParticipants([]);
     setAgentConnected(false);
     setTranslations([]);
+    setTranslationError(null);
     remoteAudioElementsRef.current.clear();
   };
 
@@ -226,7 +257,6 @@ export default function TranslationRoom() {
               onChange={(e) => setRoomName(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-white placeholder-white/40 outline-none"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-              onKeyDown={(e) => e.key === "Enter" && joinRoom()}
             />
             <input
               type="text"
@@ -235,8 +265,36 @@ export default function TranslationRoom() {
               onChange={(e) => setUserName(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-white placeholder-white/40 outline-none"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-              onKeyDown={(e) => e.key === "Enter" && joinRoom()}
             />
+
+            {/* Language Selection */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-white/60 text-sm mb-1 block">I speak</label>
+                <select
+                  value={speaksLanguage}
+                  onChange={(e) => setSpeaksLanguage(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl text-white outline-none"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <option value="en">English</option>
+                  <option value="fr">French</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-white/60 text-sm mb-1 block">I want to hear</label>
+                <select
+                  value={hearsLanguage}
+                  onChange={(e) => setHearsLanguage(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl text-white outline-none"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <option value="fr">French</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+            </div>
+
             <button
               onClick={joinRoom}
               disabled={!roomName.trim() || !userName.trim()}
@@ -248,7 +306,7 @@ export default function TranslationRoom() {
           </div>
 
           <p className="text-center text-white/40 text-sm mt-6">
-            Arabic ↔ English translation powered by AI
+            Voice replacement: You only hear translated audio
           </p>
         </div>
       </div>
@@ -312,6 +370,13 @@ export default function TranslationRoom() {
               <span className="text-xs text-emerald-400">Listening...</span>
             </div>
           )}
+
+          {/* Error Indicator */}
+          {translationError && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20">
+              <span className="text-xs text-red-400">Translation error</span>
+            </div>
+          )}
         </div>
 
         {/* Participants */}
@@ -320,7 +385,7 @@ export default function TranslationRoom() {
             <div
               key={p}
               className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium text-white"
-              style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
+              style={{ background: p === userName ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
               title={p}
             >
               {p.charAt(0).toUpperCase()}
@@ -341,7 +406,7 @@ export default function TranslationRoom() {
             <h3 className="text-white/80 font-medium mb-2">Ready to translate</h3>
             <p className="text-white/40 text-sm max-w-xs">
               {agentConnected
-                ? "Speak naturally in English or Arabic. Your voice will be translated automatically."
+                ? "Speak naturally. You will hear translated audio from other participants."
                 : "Waiting for the translation agent to connect..."}
             </p>
           </div>
@@ -349,15 +414,15 @@ export default function TranslationRoom() {
           <div className="max-w-2xl mx-auto space-y-4">
             {translations.map((t) => (
               <div key={t.id} className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                {/* Original */}
+                {/* Speaker + Original */}
                 <div className="px-4 py-3 border-b border-white/5">
                   <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-white/80">{t.speakerName}</span>
                     <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">
                       {t.sourceLang.toUpperCase()}
                     </span>
-                    <span className="text-white/30 text-xs">Original</span>
                   </div>
-                  <p className="text-white/80" style={{ direction: t.sourceLang === "ar" ? "rtl" : "ltr" }}>
+                  <p className="text-white/60">
                     {t.original}
                   </p>
                 </div>
@@ -370,7 +435,7 @@ export default function TranslationRoom() {
                     </span>
                     <span className="text-white/30 text-xs">Translation</span>
                   </div>
-                  <p className="text-white text-lg" style={{ direction: t.targetLang === "ar" ? "rtl" : "ltr" }}>
+                  <p className="text-white text-lg">
                     {t.translated}
                   </p>
                 </div>
@@ -380,13 +445,16 @@ export default function TranslationRoom() {
         )}
       </div>
 
-      {/* Footer - Instructions */}
-      <footer className="px-4 py-3 border-t border-white/5 text-center">
-        <p className="text-white/40 text-sm">
-          {agentConnected
-            ? "Speak clearly for 2-3 seconds, then pause. Translation will appear automatically."
-            : "The translator will join automatically when you start speaking."}
-        </p>
+      {/* Footer */}
+      <footer className="px-4 py-3 border-t border-white/5">
+        <div className="flex items-center justify-between text-white/40 text-sm">
+          <span>
+            You speak: {speaksLanguage.toUpperCase()} | You hear: {hearsLanguage.toUpperCase()}
+          </span>
+          <span>
+            Voice replacement active - you hear translations only
+          </span>
+        </div>
       </footer>
     </div>
   );

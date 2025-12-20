@@ -13,7 +13,7 @@ export default function CreateRoomPage() {
 
   const [roomName, setRoomName] = useState("");
   const [speaksLanguage, setSpeaksLanguage] = useState<LanguageCode>("en");
-  const [hearsLanguage, setHearsLanguage] = useState<LanguageCode>("ar");
+  const [hearsLanguage, setHearsLanguage] = useState<LanguageCode>("fr");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [createdRoom, setCreatedRoom] = useState<{ code: string; shareUrl: string } | null>(null);

@@ -60,10 +60,10 @@ export default function CallPage() {
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
+  const [translationError, setTranslationError] = useState<string | null>(null);
 
   const roomRef = useRef<Room | null>(null);
   const remoteAudioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
-  const audioChunkBufferRef = useRef<Map<string, { chunks: string[], totalChunks: number }>>(new Map());
 
   const addTranslation = useCallback((t: Omit<Translation, "id" | "timestamp">) => {
     setTranslations(prev => [{
@@ -71,6 +71,8 @@ export default function CallPage() {
       id: Date.now().toString(),
       timestamp: new Date(),
     }, ...prev].slice(0, 15)); // Keep last 15
+    // Clear any error when we get a successful translation
+    setTranslationError(null);
   }, []);
 
   // Load call data from sessionStorage
@@ -141,41 +143,54 @@ export default function CallPage() {
           }
         });
 
-        // Track events - MUTE ORIGINAL AUDIO
+        // Track events - ONLY subscribe to agent's translated audio tracks
         room.on(RoomEvent.TrackSubscribed,
-          (track: RemoteTrack, _pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+          (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
             if (track.kind === Track.Kind.Audio) {
-              const audioElement = track.attach();
-              audioElement.id = `audio-${participant.identity}`;
-
-              // CRITICAL: Mute original audio for non-agent participants
-              // Users will hear only the translated audio from data channel
+              // ONLY attach audio for agent participants
+              // Users will NEVER hear each other's original audio
               if (!isAgentParticipant(participant.identity)) {
-                audioElement.volume = 0;
-                audioElement.muted = true;
+                console.log(`Ignoring audio track from non-agent: ${participant.identity}`);
+                return;
               }
 
+              // Check if this track is for us (translated_for_{our_identity})
+              const trackName = pub.trackName || "";
+              const myIdentity = callData.odentity;
+
+              // If track has a name, verify it's for us
+              if (trackName && !trackName.includes(myIdentity)) {
+                console.log(`Ignoring audio track not for us: ${trackName}`);
+                return;
+              }
+
+              console.log(`Attaching translated audio track: ${trackName || "agent-audio"}`);
+              const audioElement = track.attach();
+              audioElement.id = `audio-${participant.identity}-${trackName}`;
+
               document.body.appendChild(audioElement);
-              remoteAudioElementsRef.current.set(participant.identity, audioElement);
+              remoteAudioElementsRef.current.set(`${participant.identity}-${trackName}`, audioElement);
             }
           }
         );
 
         room.on(RoomEvent.TrackUnsubscribed,
-          (track: RemoteTrack, _pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+          (track: RemoteTrack, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
             if (track.kind === Track.Kind.Audio) {
               track.detach().forEach((el) => el.remove());
-              remoteAudioElementsRef.current.delete(participant.identity);
+              const trackName = pub.trackName || "";
+              remoteAudioElementsRef.current.delete(`${participant.identity}-${trackName}`);
             }
           }
         );
 
-        // Data channel for translations - targeted messages
+        // Data channel for translation TEXT (audio comes via track)
         room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
           try {
             const data = JSON.parse(new TextDecoder().decode(payload));
 
-            if (data.type === "translation_start") {
+            if (data.type === "translation_text") {
+              // Text-only message - audio comes via agent's published track
               setIsListening(false);
               addTranslation({
                 speakerName: data.speakerName || "Unknown",
@@ -184,27 +199,16 @@ export default function CallPage() {
                 sourceLang: data.sourceLang,
                 targetLang: data.targetLang,
               });
-
-              audioChunkBufferRef.current.set(data.messageId, {
-                chunks: new Array(data.totalChunks).fill(""),
-                totalChunks: data.totalChunks,
-              });
-
-            } else if (data.type === "translation_chunk") {
-              const buffer = audioChunkBufferRef.current.get(data.messageId);
-              if (buffer) {
-                buffer.chunks[data.chunkIndex] = data.audio;
-                const received = buffer.chunks.filter((c: string) => c !== "").length;
-
-                if (received === buffer.totalChunks) {
-                  const fullAudio = buffer.chunks.join("");
-                  const audio = new Audio(`data:audio/mpeg;base64,${fullAudio}`);
-                  audio.play().catch(() => {});
-                  audioChunkBufferRef.current.delete(data.messageId);
-                }
-              }
+            } else if (data.type === "translation_error") {
+              // Handle translation errors silently (no audio plays)
+              console.error("Translation error:", data.error);
+              setTranslationError(data.error);
+              // Auto-clear error after 5 seconds
+              setTimeout(() => setTranslationError(null), 5000);
             }
-          } catch {}
+          } catch (e) {
+            console.error("Failed to parse data channel message:", e);
+          }
         });
 
         // Audio activity indicator
@@ -309,7 +313,7 @@ export default function CallPage() {
             odentity: p.identity,
             displayName: p.displayName,
             spokeLanguage: p.speaksLanguage || "en",
-            heardLanguage: p.hearsLanguage || "ar",
+            heardLanguage: p.hearsLanguage || "fr",
           }));
 
         await fetch("/api/calls", {
@@ -429,6 +433,13 @@ export default function CallPage() {
               <span className="text-xs text-emerald-400">Listening...</span>
             </div>
           )}
+
+          {/* Error Indicator */}
+          {translationError && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20">
+              <span className="text-xs text-red-400">Translation error</span>
+            </div>
+          )}
         </div>
 
         {/* Participants with language badges */}
@@ -514,7 +525,7 @@ export default function CallPage() {
             You speak: {callData.speaksLanguage.toUpperCase()} | You hear: {callData.hearsLanguage.toUpperCase()}
           </span>
           <span>
-            Original audio is muted - you hear translations only
+            Voice replacement active - you hear translations only
           </span>
         </div>
       </footer>

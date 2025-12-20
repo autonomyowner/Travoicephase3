@@ -27,7 +27,7 @@ export default function RoomLobbyPage() {
 
   const [displayName, setDisplayName] = useState("");
   const [speaksLanguage, setSpeaksLanguage] = useState<LanguageCode>("en");
-  const [hearsLanguage, setHearsLanguage] = useState<LanguageCode>("ar");
+  const [hearsLanguage, setHearsLanguage] = useState<LanguageCode>("fr");
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
 
