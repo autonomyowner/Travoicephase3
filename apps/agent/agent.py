@@ -49,13 +49,9 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 LANG_NAMES = {"en": "English", "fr": "French"}
 
-# Cartesia voices - Sonic multilingual model
-# See: https://play.cartesia.ai/voices
-# These are multilingual voices that support both English and French
-CARTESIA_VOICES = {
-    "en": "79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
-    "fr": "c2ac25f9-ecc4-4f56-9095-651354df60c0",  # Default multilingual voice
-}
+# Cartesia default voice - supports multiple languages including en, de, es, fr
+# See: https://docs.livekit.io/reference/python/v1/livekit/plugins/cartesia/
+CARTESIA_DEFAULT_VOICE = "f786b574-daa5-4673-aa0c-cbe3e8534c02"
 
 # =============================================================================
 # DATA STRUCTURES
@@ -329,16 +325,13 @@ class MultiParticipantTranslator:
         """Create a translation session that outputs to this specific listener."""
         logger.info(f"Creating session for {listener.display_name} (hears: {listener.hears_language})")
 
-        # Get voice for target language
-        voice = os.getenv(f"CARTESIA_VOICE_{listener.hears_language.upper()}")
-        if not voice:
-            voice = CARTESIA_VOICES.get(listener.hears_language, CARTESIA_VOICES["en"])
+        # Get voice - use env var or default multilingual voice
+        voice = os.getenv("CARTESIA_VOICE_ID", CARTESIA_DEFAULT_VOICE)
 
-        # Create TTS - Cartesia Sonic multilingual for French support
-        # Use "sonic" model which supports multiple languages including French
+        # Create TTS - Cartesia sonic-2 supports en, de, es, fr
         tts = cartesia.TTS(
             voice=voice,
-            model="sonic",
+            model="sonic-2",
             language=listener.hears_language,
         )
 
