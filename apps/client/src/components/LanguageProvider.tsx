@@ -12,7 +12,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const RTL_LANGUAGES: Language[] = ['ar'];
+const RTL_LANGUAGES: Language[] = []; // French is LTR
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
@@ -21,7 +21,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Load saved language from localStorage
     const savedLanguage = localStorage.getItem('language') as Language | null;
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ar')) {
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'fr')) {
       setLanguageState(savedLanguage);
       updateDocumentDirection(savedLanguage);
     } else {

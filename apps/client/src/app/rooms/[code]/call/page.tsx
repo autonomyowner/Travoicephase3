@@ -495,7 +495,7 @@ export default function CallPage() {
                       {t.sourceLang.toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-white/60" style={{ direction: t.sourceLang === "ar" ? "rtl" : "ltr" }}>
+                  <p className="text-white/60">
                     {t.original}
                   </p>
                 </div>
@@ -508,7 +508,7 @@ export default function CallPage() {
                     </span>
                     <span className="text-white/30 text-xs">Translation</span>
                   </div>
-                  <p className="text-white text-lg" style={{ direction: t.targetLang === "ar" ? "rtl" : "ltr" }}>
+                  <p className="text-white text-lg">
                     {t.translated}
                   </p>
                 </div>

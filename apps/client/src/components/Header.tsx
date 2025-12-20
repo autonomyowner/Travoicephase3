@@ -15,7 +15,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLanguageToggle = () => {
-    const newLang: Language = language === 'en' ? 'ar' : 'en';
+    const newLang: Language = language === 'en' ? 'fr' : 'en';
     setLanguage(newLang);
   };
 
@@ -85,7 +85,7 @@ export default function Header() {
                 borderColor: 'var(--border-soft)',
               }}
             >
-              {language === 'en' ? 'العربية' : 'English'}
+              {language === 'en' ? 'Français' : 'English'}
             </button>
             <SignedIn>
               <span
@@ -178,7 +178,7 @@ export default function Header() {
                 className="text-sm font-medium py-2 w-full text-start"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                {language === 'en' ? 'العربية' : 'English'}
+                {language === 'en' ? 'Français' : 'English'}
               </button>
 
               <div className="pt-3 border-t border-[var(--border-soft)]">

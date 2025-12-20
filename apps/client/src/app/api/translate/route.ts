@@ -148,10 +148,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine source language (if Arabic detected, source is Arabic)
-    const sourceLang = detectedLanguage === "ar" ? "ar" : "en";
+    // Determine source language (if French detected, source is French)
+    const sourceLang = detectedLanguage === "fr" ? "fr" : "en";
     // Target is opposite of source for MVP
-    const actualTargetLang = sourceLang === "ar" ? "en" : "ar";
+    const actualTargetLang = sourceLang === "fr" ? "en" : "fr";
 
     // Step 2: Translate
     const translatedText = await translateText(
