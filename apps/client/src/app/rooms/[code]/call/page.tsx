@@ -313,7 +313,7 @@ export default function CallPage() {
             odentity: p.identity,
             displayName: p.displayName,
             spokeLanguage: p.speaksLanguage || "en",
-            heardLanguage: p.hearsLanguage || "fr",
+            heardLanguage: p.hearsLanguage || "ar",
           }));
 
         await fetch("/api/calls", {

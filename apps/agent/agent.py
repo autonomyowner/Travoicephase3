@@ -4,9 +4,10 @@ Uses LiveKit Agents v1.x with AgentSession per listener.
 
 Architecture:
 - One AgentSession per listener (person who needs translations)
-- Each session: STT (Deepgram) -> LLM (translation) -> TTS (PlayHT)
+- Each session: STT (Deepgram) -> LLM (translation) -> TTS (OpenAI)
 - Active speaker switching to handle multi-participant input
 - Conversation context for pronoun resolution
+- Supports Arabic <-> English real-time translation
 """
 
 import asyncio
@@ -30,7 +31,7 @@ from livekit.agents import (
     cli,
     llm,
 )
-from livekit.plugins import deepgram, silero, cartesia, openai
+from livekit.plugins import deepgram, silero, openai
 
 load_dotenv()
 
@@ -47,11 +48,11 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 # CONFIGURATION
 # =============================================================================
 
-LANG_NAMES = {"en": "English", "fr": "French"}
+LANG_NAMES = {"en": "English", "ar": "Arabic"}
 
-# Cartesia default voice - supports multiple languages including en, de, es, fr
-# See: https://docs.livekit.io/reference/python/v1/livekit/plugins/cartesia/
-CARTESIA_DEFAULT_VOICE = "f786b574-daa5-4673-aa0c-cbe3e8534c02"
+# OpenAI TTS voices - supports Arabic and English
+# alloy, echo, fable, onyx, nova, shimmer
+OPENAI_TTS_VOICE = "alloy"
 
 # =============================================================================
 # DATA STRUCTURES
@@ -195,24 +196,44 @@ CRITICAL RULES:
         # Update instructions with fresh context
         self._instructions = self._build_instructions()
 
-        # Send translation metadata via data channel
+        # Generate translation via LLM
+        target_lang_name = LANG_NAMES.get(self.target_language, self.target_language)
+        translation_prompt = f"Translate this to {target_lang_name}. Output ONLY the translation: {user_text}"
+
+        # Get the translation text from LLM
+        translated_text = ""
+        try:
+            # Use generate_reply which handles LLM + TTS, but we also capture text for metadata
+            # First, let's generate the reply and capture it
+            response = await turn_ctx.generate_reply(
+                instructions=translation_prompt
+            )
+
+            # The response is spoken via TTS automatically
+            # For metadata, we'll extract from the chat context
+            if turn_ctx.chat_ctx and turn_ctx.chat_ctx.messages:
+                last_msg = turn_ctx.chat_ctx.messages[-1]
+                if hasattr(last_msg, 'text_content'):
+                    translated_text = last_msg.text_content or ""
+                elif hasattr(last_msg, 'content'):
+                    translated_text = str(last_msg.content) if last_msg.content else ""
+        except Exception as e:
+            logger.error(f"Translation error: {e}")
+            translated_text = f"[Translation error]"
+
+        # Send translation metadata via data channel (with actual translated text)
         await self._send_translation_metadata(
             speaker_name=speaker_name,
             original_text=user_text,
+            translated_text=translated_text.strip(),
             source_lang=source_lang,
-        )
-
-        # Generate translation via LLM -> TTS
-        # The LLM will use our translation instructions
-        target_lang_name = LANG_NAMES.get(self.target_language, self.target_language)
-        await turn_ctx.generate_reply(
-            instructions=f"Translate this to {target_lang_name}. Output ONLY the translation: {user_text}"
         )
 
     async def _send_translation_metadata(
         self,
         speaker_name: str,
         original_text: str,
+        translated_text: str,
         source_lang: str,
     ):
         """Send translation text metadata via data channel."""
@@ -223,7 +244,7 @@ CRITICAL RULES:
             "type": "translation_text",
             "speakerName": speaker_name,
             "originalText": original_text,
-            "translatedText": "",  # TTS output handles the audio
+            "translatedText": translated_text,
             "sourceLang": source_lang,
             "targetLang": self.target_language,
             "timestamp": time.time(),
@@ -325,14 +346,10 @@ class MultiParticipantTranslator:
         """Create a translation session that outputs to this specific listener."""
         logger.info(f"Creating session for {listener.display_name} (hears: {listener.hears_language})")
 
-        # Get voice - use env var or default multilingual voice
-        voice = os.getenv("CARTESIA_VOICE_ID", CARTESIA_DEFAULT_VOICE)
-
-        # Create TTS - Cartesia sonic-2 supports en, de, es, fr
-        tts = cartesia.TTS(
-            voice=voice,
-            model="sonic-2",
-            language=listener.hears_language,
+        # Create TTS - OpenAI TTS supports Arabic and English
+        tts = openai.TTS(
+            voice=OPENAI_TTS_VOICE,
+            model="tts-1",
         )
 
         # Create LLM for translation (via OpenRouter)

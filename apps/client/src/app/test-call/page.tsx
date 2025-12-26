@@ -26,7 +26,7 @@ export default function TranslationRoom() {
   const [roomName, setRoomName] = useState("");
   const [userName, setUserName] = useState("");
   const [speaksLanguage, setSpeaksLanguage] = useState("en");
-  const [hearsLanguage, setHearsLanguage] = useState("fr");
+  const [hearsLanguage, setHearsLanguage] = useState("ar");
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const [participants, setParticipants] = useState<string[]>([]);
   const [agentConnected, setAgentConnected] = useState(false);
@@ -278,7 +278,7 @@ export default function TranslationRoom() {
                   style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
                 >
                   <option value="en">English</option>
-                  <option value="fr">French</option>
+                  <option value="ar">Arabic (العربية)</option>
                 </select>
               </div>
               <div>
@@ -289,7 +289,7 @@ export default function TranslationRoom() {
                   className="w-full px-4 py-3 rounded-xl text-white outline-none"
                   style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
                 >
-                  <option value="fr">French</option>
+                  <option value="ar">Arabic (العربية)</option>
                   <option value="en">English</option>
                 </select>
               </div>

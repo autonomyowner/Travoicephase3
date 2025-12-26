@@ -4,7 +4,7 @@ import React, { SelectHTMLAttributes, forwardRef } from 'react';
 
 const LANGUAGES = [
   { code: 'en', name: 'English', nativeName: 'English' },
-  { code: 'fr', name: 'French', nativeName: 'Français' },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية' },
 ] as const;
 
 type LanguageCode = typeof LANGUAGES[number]['code'];

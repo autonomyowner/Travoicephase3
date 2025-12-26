@@ -6,8 +6,8 @@ import { nanoid } from "nanoid";
 
 interface JoinRoomRequest {
   displayName: string;
-  speaksLanguage: "en" | "fr";
-  hearsLanguage: "en" | "fr";
+  speaksLanguage: "en" | "ar";
+  hearsLanguage: "en" | "ar";
   guestId?: string;
 }
 
@@ -31,16 +31,16 @@ export async function POST(
       );
     }
 
-    if (!speaksLanguage || !["en", "fr"].includes(speaksLanguage)) {
+    if (!speaksLanguage || !["en", "ar"].includes(speaksLanguage)) {
       return NextResponse.json(
-        { error: "Valid speaksLanguage is required (en or fr)" },
+        { error: "Valid speaksLanguage is required (en or ar)" },
         { status: 400 }
       );
     }
 
-    if (!hearsLanguage || !["en", "fr"].includes(hearsLanguage)) {
+    if (!hearsLanguage || !["en", "ar"].includes(hearsLanguage)) {
       return NextResponse.json(
-        { error: "Valid hearsLanguage is required (en or fr)" },
+        { error: "Valid hearsLanguage is required (en or ar)" },
         { status: 400 }
       );
     }

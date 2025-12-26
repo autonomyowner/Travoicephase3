@@ -12,7 +12,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const RTL_LANGUAGES: Language[] = []; // French is LTR
+const RTL_LANGUAGES: Language[] = []; // We keep UI in LTR, Arabic translation is handled separately
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
