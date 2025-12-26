@@ -12,12 +12,12 @@
   "dependencies": {
     "@clerk/nextjs": "^6.35.5",
     "@livekit/components-react": "^2.9.16",
-    "@prisma/client": "^6.8.2",
+    "@prisma/client": "^5.22.0",
     "livekit-client": "^2.16.0",
     "livekit-server-sdk": "^2.14.2",
     "nanoid": "^5.1.6",
     "next": "15.2.6",
-    "prisma": "^6.8.2",
+    "prisma": "^5.22.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
